@@ -1,4 +1,4 @@
-import { Box, Button, Text, VStack, Flex } from '@chakra-ui/react';
+import { Box, Text, VStack, Flex } from '@chakra-ui/react';
 import AddIcon from '@mui/icons-material/Add';
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';

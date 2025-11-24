@@ -77,7 +77,6 @@ export const CriteriaSection = ({
   onMatchTypeChange,
   onTimePeriodChange,
   onRuleDelete,
-  onRuleAdd,
   onRuleChange,
   onRuleToggleExcluded,
   onRuleToggleDisabled,

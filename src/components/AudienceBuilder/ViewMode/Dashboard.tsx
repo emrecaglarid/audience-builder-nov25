@@ -28,7 +28,7 @@ const DATE_RANGE_LABELS: Record<DateRangePeriod, string> = {
   custom: 'Custom range',
 };
 
-export const Dashboard = ({ matchingProfiles, sections = [], customers = [] }: DashboardProps) => {
+export const Dashboard = ({ sections = [], customers = [] }: DashboardProps) => {
   const [dateRange, setDateRange] = useState<DateRangePeriod>('last30days');
 
   // Generate time-series data

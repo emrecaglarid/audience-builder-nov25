@@ -234,7 +234,7 @@ function LibraryPane({ facts, engagements, isVisible, onPropertyClick, onClose }
               >
                 <ArrowBackIcon fontSize="small" />
               </IconButton>
-              <Text fontWeight="semibold" fontSize="md" noOfLines={1}>
+              <Text fontWeight="semibold" fontSize="md" lineClamp={1}>
                 {navigationView.type === 'fact-detail'
                   ? navigationView.fact.name
                   : navigationView.engagement.name}

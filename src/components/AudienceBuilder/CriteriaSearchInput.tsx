@@ -23,8 +23,6 @@ interface SuggestionPill {
 }
 
 export function CriteriaSearchInput({
-  sectionTitle,
-  sectionId,
   facts,
   engagements,
   shouldFocus = false,

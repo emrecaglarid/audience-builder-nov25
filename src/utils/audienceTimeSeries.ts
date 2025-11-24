@@ -3,9 +3,7 @@
  * Generates historical audience flow data based on rules and customer data
  */
 
-import { Customer } from '@/types';
-import { ConditionGroup } from '@/types/query';
-import { filterCustomers } from './queryEngine';
+import type { Customer } from '@/types';
 import type { MatchType, TimePeriod } from '@/components/AudienceBuilder/CriteriaSection';
 
 export interface SectionConfig {
@@ -63,7 +61,6 @@ export function generateTimeSeriesData(
 ): TimeSeriesData {
   // Find relevant sections
   const entrySection = sections.find(s => s.id === 'entry');
-  const exitSection = sections.find(s => s.id === 'exit');
   const goalsSection = sections.find(s => s.id === 'goals');
 
   if (!entrySection) {
@@ -85,10 +82,6 @@ export function generateTimeSeriesData(
   const daily: DailySnapshot[] = [];
   const currentDate = new Date(dateRange.start);
 
-  // Track which customers are active on each day
-  const customerEntryDates = new Map<string, Date>();
-  const customerExitDates = new Map<string, Date>();
-
   while (currentDate <= dateRange.end) {
     const dateStr = currentDate.toISOString().split('T')[0];
 
@@ -103,7 +96,7 @@ export function generateTimeSeriesData(
     // Mock goal data
     const goals: DailySnapshot['goals'] = {};
     if (goalsSection && goalsSection.rules.length > 0) {
-      goalsSection.rules.forEach((rule, index) => {
+      goalsSection.rules.forEach((_rule, index) => {
         const completions = Math.floor(Math.random() * 20) + 5;
         const avgValue = Math.floor(Math.random() * 150) + 50; // $50-$200
         goals[`goal-${index}`] = {

@@ -1,8 +1,8 @@
-import { Box, VStack, Text, Flex, Badge, Button } from '@chakra-ui/react';
+import { Box, VStack, Text, Flex, Badge } from '@chakra-ui/react';
 import { useState } from 'react';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { ruleToSentence, sectionToSummary, destinationsToSentence } from '@/utils/ruleSummarizer';
+import { ruleToSentence, destinationsToSentence } from '@/utils/ruleSummarizer';
 import type { PropertyDefinition } from '@/types';
 import type { AddedDestination } from '@/types/destination';
 

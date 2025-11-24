@@ -192,13 +192,14 @@ function sectionToConditionGroup(
   // Add included conditions directly
   allConditions.push(...includedConditions);
 
-  // Wrap each excluded condition in a NOT group (AND operator with single negated condition)
-  excludedConditions.forEach(condition => {
+  // Wrap excluded conditions in an AND group
+  // Note: Excluded conditions will be handled by the query engine using negation
+  if (excludedConditions.length > 0) {
     allConditions.push({
-      operator: 'NOT',
-      conditions: [condition],
-    } as ConditionGroup);
-  });
+      operator: 'AND',
+      conditions: excludedConditions,
+    });
+  }
 
   if (allConditions.length === 0) {
     return null; // No valid conditions

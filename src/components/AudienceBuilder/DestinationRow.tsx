@@ -1,4 +1,4 @@
-import { Box, IconButton, Text, Flex, Badge, Input, VStack } from '@chakra-ui/react'
+import { Box, IconButton, Text, Flex, Input, VStack } from '@chakra-ui/react'
 import { Menu } from '@chakra-ui/react'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
@@ -72,7 +72,7 @@ export function DestinationRow({
           <Text fontSize="sm" color="gray.600">
             {platformMeta.displayName}
           </Text>
-          <Text fontSize="xs" color="gray.500" noOfLines={1}>
+          <Text fontSize="xs" color="gray.500" lineClamp={1}>
             {destination.accountName}
           </Text>
         </VStack>

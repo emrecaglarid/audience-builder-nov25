@@ -59,10 +59,12 @@ function DefinitionPane({ rules, onRemoveRule }: DefinitionPaneProps) {
             return (
               <RuleRow
                 key={rule.id}
+                ruleId={rule.id}
                 ruleName={propertyName}
                 parentName={rule.item.name}
                 properties={properties}
                 preSelectedProperty={rule.preSelectedProperty}
+                sectionId="entry"
                 onDelete={() => onRemoveRule(rule.id)}
                 onChange={(data) => {
                   // TODO: Store the rule configuration for query building

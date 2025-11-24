@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Box, Flex } from '@chakra-ui/react';
 import { useState, useEffect, useMemo } from 'react';
 import { getAudience, saveAudience } from '../../services/audienceStorage';
@@ -21,7 +21,7 @@ import EditorHeader from './EditorHeader';
 import LibraryPane from './LibraryPane';
 import { Canvas } from './Canvas';
 import PreviewPane, { PreviewTimePeriod } from './PreviewPane';
-import { Toolbar, ToolbarPane } from './Toolbar';
+import { ToolbarPane } from './Toolbar';
 import { MatchType, TimePeriod } from './CriteriaSection';
 import type { PropertyMatch } from './PropertyDropdown';
 import type { AISuggestion } from './aiSuggestions';
@@ -57,7 +57,6 @@ interface SectionConfig {
 
 function AudienceBuilderPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { schema, customers } = useApp();
 
   // Local state for audience being edited
@@ -1006,8 +1005,8 @@ function AudienceBuilderPage() {
                     reachedGoals={reachedGoals}
                     timePeriod={previewTimePeriod}
                     onTimePeriodChange={setPreviewTimePeriod}
-                    hasGoals={sections.find(s => s.id === 'goals')?.rules.length > 0}
-                    hasExitConditions={sections.find(s => s.id === 'exit')?.rules.length > 0}
+                    hasGoals={(sections.find(s => s.id === 'goals')?.rules.length ?? 0) > 0}
+                    hasExitConditions={(sections.find(s => s.id === 'exit')?.rules.length ?? 0) > 0}
                   />
                 </Box>
               )}

@@ -157,10 +157,10 @@ export function DestinationPickerModal({
 
                           {/* Account info */}
                           <Box flex="1" minW="0">
-                            <Text fontSize="sm" fontWeight="medium" color="gray.700" noOfLines={1}>
+                            <Text fontSize="sm" fontWeight="medium" color="gray.700" lineClamp={1}>
                               {destination.accountName}
                             </Text>
-                            <Text fontSize="xs" color="gray.500" noOfLines={1}>
+                            <Text fontSize="xs" color="gray.500" lineClamp={1}>
                               {destination.listName || destination.accountId}
                             </Text>
                             <Text fontSize="xs" color="gray.400">

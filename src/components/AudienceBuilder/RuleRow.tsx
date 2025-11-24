@@ -78,7 +78,6 @@ const getOperatorsForType = (dataType: string): Array<{ value: ComparisonOperato
 export function RuleRow({
   ruleId,
   ruleName,
-  parentName,
   properties,
   preSelectedProperty,
   excluded = false,
@@ -216,9 +215,7 @@ export function RuleRow({
           alignItems="center"
           color="gray.400"
           _hover={{ color: 'gray.600' }}
-          sx={{
-            touchAction: 'none',
-          }}
+          style={{ touchAction: 'none' }}
         >
           <DragIndicatorIcon fontSize="small" />
         </Box>
