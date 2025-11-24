@@ -1,0 +1,156 @@
+{
+  "industryName": "E-commerce",
+  "industryId": "ecommerce",
+  "facts": [
+    {
+      "id": "customerProfile",
+      "name": "Customer Profile",
+      "description": "Customer demographics and account information",
+      "category": "profile",
+      "properties": [
+        { "id": "customer_id", "name": "Customer ID", "description": "Unique customer identifier", "dataType": "string" },
+        { "id": "email", "name": "Email", "description": "Customer email address", "dataType": "string" },
+        { "id": "phone_number", "name": "Phone Number", "description": "Contact phone number", "dataType": "string" },
+        { "id": "age", "name": "Age", "description": "Customer age in years", "dataType": "number" },
+        { "id": "gender", "name": "Gender", "description": "Customer gender", "dataType": "string", "allowedValues": ["male", "female", "non-binary", "prefer-not-to-say"] },
+        { "id": "location_city", "name": "Location City", "description": "City of residence", "dataType": "string" },
+        { "id": "location_state", "name": "Location State", "description": "State code", "dataType": "string" },
+        { "id": "signup_date", "name": "Signup Date", "description": "Account creation date", "dataType": "date" },
+        { "id": "email_subscribed", "name": "Email Subscribed", "description": "Marketing email subscription", "dataType": "boolean" }
+      ]
+    },
+    {
+      "id": "membershipStatus",
+      "name": "Membership Status",
+      "description": "Loyalty program membership details",
+      "category": "loyalty",
+      "properties": [
+        { "id": "tier", "name": "Tier", "description": "Membership tier level", "dataType": "string", "allowedValues": ["bronze", "silver", "gold", "platinum"] },
+        { "id": "points_balance", "name": "Points Balance", "description": "Current loyalty points", "dataType": "number" },
+        { "id": "lifetime_points", "name": "Lifetime Points", "description": "Total points earned", "dataType": "number" },
+        { "id": "tier_expiration_date", "name": "Tier Expiration Date", "description": "When tier expires", "dataType": "date" },
+        { "id": "next_tier", "name": "Next Tier", "description": "Next achievable tier", "dataType": "string" },
+        { "id": "points_to_next_tier", "name": "Points to Next Tier", "description": "Points needed for next tier", "dataType": "number" }
+      ]
+    },
+    {
+      "id": "purchaseHistory",
+      "name": "Purchase History",
+      "description": "Customer purchase behavior and metrics",
+      "category": "behavior",
+      "properties": [
+        { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" },
+        { "id": "lifetime_value", "name": "Lifetime Value", "description": "Total amount spent in USD", "dataType": "number" },
+        { "id": "average_order_value", "name": "Average Order Value", "description": "Average spend per order", "dataType": "number" },
+        { "id": "last_purchase_date", "name": "Last Purchase Date", "description": "Date of most recent purchase", "dataType": "date" },
+        { "id": "first_purchase_date", "name": "First Purchase Date", "description": "Date of first purchase", "dataType": "date" },
+        { "id": "preferred_category", "name": "Preferred Category", "description": "Most purchased category", "dataType": "string", "allowedValues": ["electronics", "clothing", "home", "beauty", "sports", "books"] },
+        { "id": "return_rate", "name": "Return Rate", "description": "Percentage of returned orders", "dataType": "number" }
+      ]
+    },
+    {
+      "id": "engagementMetrics",
+      "name": "Engagement Metrics",
+      "description": "Site engagement and interaction metrics",
+      "category": "engagement",
+      "properties": [
+        { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" },
+        { "id": "last_visit_date", "name": "Last Visit Date", "description": "Most recent site visit", "dataType": "date" },
+        { "id": "average_session_duration", "name": "Average Session Duration", "description": "Average time per visit (seconds)", "dataType": "number" },
+        { "id": "product_views", "name": "Product Views", "description": "Total products viewed", "dataType": "number" },
+        { "id": "cart_abandonment_rate", "name": "Cart Abandonment Rate", "description": "Percentage of abandoned carts", "dataType": "number" },
+        { "id": "email_open_rate", "name": "Email Open Rate", "description": "Email engagement rate", "dataType": "number" },
+        { "id": "review_count", "name": "Review Count", "description": "Number of reviews written", "dataType": "number" }
+      ]
+    }
+  ],
+  "engagements": [
+    {
+      "id": "purchase",
+      "name": "Purchase",
+      "description": "Product purchase event",
+      "properties": [
+        { "id": "order_id", "name": "Order ID", "description": "Unique order identifier", "dataType": "string" },
+        { "id": "amount", "name": "Amount", "description": "Purchase amount in USD", "dataType": "number" },
+        { "id": "product_id", "name": "Product ID", "description": "Product identifier", "dataType": "string" },
+        { "id": "product_name", "name": "Product Name", "description": "Product name", "dataType": "string" },
+        { "id": "category", "name": "Category", "description": "Product category", "dataType": "string", "allowedValues": ["electronics", "clothing", "home", "beauty", "sports", "books"] },
+        { "id": "quantity", "name": "Quantity", "description": "Items purchased", "dataType": "number" },
+        { "id": "discount_applied", "name": "Discount Applied", "description": "Discount amount", "dataType": "number" },
+        { "id": "payment_method", "name": "Payment Method", "description": "Payment type", "dataType": "string", "allowedValues": ["credit-card", "debit-card", "paypal", "apple-pay", "google-pay"] }
+      ]
+    },
+    {
+      "id": "productView",
+      "name": "Product View",
+      "description": "Product page viewed",
+      "properties": [
+        { "id": "product_id", "name": "Product ID", "description": "Product identifier", "dataType": "string" },
+        { "id": "product_name", "name": "Product Name", "description": "Product name", "dataType": "string" },
+        { "id": "category", "name": "Category", "description": "Product category", "dataType": "string" },
+        { "id": "price", "name": "Price", "description": "Product price in USD", "dataType": "number" },
+        { "id": "time_on_page", "name": "Time on Page", "description": "Seconds spent viewing", "dataType": "number" },
+        { "id": "added_to_cart", "name": "Added to Cart", "description": "Whether item was added to cart", "dataType": "boolean" }
+      ]
+    },
+    {
+      "id": "cartAbandonment",
+      "name": "Cart Abandonment",
+      "description": "Shopping cart abandoned without purchase",
+      "properties": [
+        { "id": "cart_id", "name": "Cart ID", "description": "Cart identifier", "dataType": "string" },
+        { "id": "cart_value", "name": "Cart Value", "description": "Total value of abandoned cart in USD", "dataType": "number" },
+        { "id": "item_count", "name": "Item Count", "description": "Number of items in cart", "dataType": "number" },
+        { "id": "abandonment_stage", "name": "Abandonment Stage", "description": "Where customer left", "dataType": "string", "allowedValues": ["cart", "shipping", "payment", "review"] },
+        { "id": "recovered", "name": "Recovered", "description": "Whether cart was later purchased", "dataType": "boolean" }
+      ]
+    },
+    {
+      "id": "emailOpen",
+      "name": "Email Open",
+      "description": "Marketing email opened",
+      "properties": [
+        { "id": "campaign_id", "name": "Campaign ID", "description": "Email campaign identifier", "dataType": "string" },
+        { "id": "subject", "name": "Subject", "description": "Email subject line", "dataType": "string" },
+        { "id": "campaign_type", "name": "Campaign Type", "description": "Type of email campaign", "dataType": "string", "allowedValues": ["promotional", "transactional", "newsletter", "abandoned-cart"] },
+        { "id": "device", "name": "Device", "description": "Device used to open", "dataType": "string", "allowedValues": ["desktop", "mobile", "tablet"] }
+      ]
+    },
+    {
+      "id": "emailClick",
+      "name": "Email Click",
+      "description": "Link clicked in marketing email",
+      "properties": [
+        { "id": "campaign_id", "name": "Campaign ID", "description": "Email campaign identifier", "dataType": "string" },
+        { "id": "link_url", "name": "Link URL", "description": "URL that was clicked", "dataType": "string" },
+        { "id": "link_text", "name": "Link Text", "description": "Text of clicked link", "dataType": "string" },
+        { "id": "position", "name": "Position", "description": "Position in email", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "siteVisit",
+      "name": "Site Visit",
+      "description": "Website visit session",
+      "properties": [
+        { "id": "session_id", "name": "Session ID", "description": "Session identifier", "dataType": "string" },
+        { "id": "duration", "name": "Duration", "description": "Session duration in seconds", "dataType": "number" },
+        { "id": "pages_viewed", "name": "Pages Viewed", "description": "Number of pages viewed", "dataType": "number" },
+        { "id": "source", "name": "Source", "description": "Traffic source", "dataType": "string", "allowedValues": ["direct", "organic", "paid", "social", "email", "referral"] },
+        { "id": "device", "name": "Device", "description": "Device type", "dataType": "string", "allowedValues": ["desktop", "mobile", "tablet"] },
+        { "id": "entry_page", "name": "Entry Page", "description": "Landing page URL", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "productReview",
+      "name": "Product Review",
+      "description": "Product review submitted",
+      "properties": [
+        { "id": "review_id", "name": "Review ID", "description": "Review identifier", "dataType": "string" },
+        { "id": "product_id", "name": "Product ID", "description": "Product identifier", "dataType": "string" },
+        { "id": "rating", "name": "Rating", "description": "Star rating (1-5)", "dataType": "number" },
+        { "id": "has_text", "name": "Has Text", "description": "Whether review includes text", "dataType": "boolean" },
+        { "id": "verified_purchase", "name": "Verified Purchase", "description": "Verified buyer", "dataType": "boolean" }
+      ]
+    }
+  ]
+}

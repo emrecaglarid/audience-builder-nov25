@@ -1,0 +1,162 @@
+{
+  "industryName": "Airlines",
+  "industryId": "airlines",
+  "facts": [
+    {
+      "id": "customerProfile",
+      "name": "Customer Profile",
+      "description": "Customer demographics and account information",
+      "category": "profile",
+      "properties": [
+        { "id": "customer_id", "name": "Customer ID", "description": "Unique customer identifier", "dataType": "string" },
+        { "id": "email", "name": "Email", "description": "Customer email address", "dataType": "string" },
+        { "id": "phone_number", "name": "Phone Number", "description": "Contact phone number", "dataType": "string" },
+        { "id": "home_airport", "name": "Home Airport", "description": "Primary departure airport code", "dataType": "string" },
+        { "id": "country", "name": "Country", "description": "Country of residence", "dataType": "string" },
+        { "id": "age", "name": "Age", "description": "Customer age in years", "dataType": "number" },
+        { "id": "member_since", "name": "Member Since", "description": "Date joined frequent flyer program", "dataType": "date" },
+        { "id": "preferred_language", "name": "Preferred Language", "description": "Communication language preference", "dataType": "string" },
+        { "id": "email_subscribed", "name": "Email Subscribed", "description": "Marketing email subscription status", "dataType": "boolean" }
+      ]
+    },
+    {
+      "id": "loyaltyMetrics",
+      "name": "Loyalty Metrics",
+      "description": "Frequent flyer program metrics and status",
+      "category": "loyalty",
+      "properties": [
+        { "id": "loyalty_tier", "name": "Loyalty Tier", "description": "Current tier level", "dataType": "string", "allowedValues": ["basic", "silver", "gold", "platinum"] },
+        { "id": "miles_balance", "name": "Miles Balance", "description": "Current miles balance", "dataType": "number" },
+        { "id": "lifetime_miles", "name": "Lifetime Miles", "description": "Total miles earned lifetime", "dataType": "number" },
+        { "id": "qualification_miles", "name": "Qualification Miles", "description": "Miles toward next tier", "dataType": "number" },
+        { "id": "tier_expiration_date", "name": "Tier Expiration Date", "description": "When current tier expires", "dataType": "date" },
+        { "id": "lifetime_flights", "name": "Lifetime Flights", "description": "Total number of flights taken", "dataType": "number" },
+        { "id": "partner_miles", "name": "Partner Miles", "description": "Miles from partner airlines", "dataType": "number" }
+      ]
+    },
+    {
+      "id": "travelPreferences",
+      "name": "Travel Preferences",
+      "description": "Travel preferences and patterns",
+      "category": "preferences",
+      "properties": [
+        { "id": "preferred_class", "name": "Preferred Class", "description": "Most frequently booked cabin class", "dataType": "string", "allowedValues": ["economy", "premium-economy", "business", "first"] },
+        { "id": "seat_preference", "name": "Seat Preference", "description": "Preferred seat type", "dataType": "string", "allowedValues": ["window", "aisle", "middle"] },
+        { "id": "meal_preference", "name": "Meal Preference", "description": "Dietary preference", "dataType": "string" },
+        { "id": "special_assistance", "name": "Special Assistance", "description": "Special assistance requirements", "dataType": "string" },
+        { "id": "average_trips_per_year", "name": "Average Trips Per Year", "description": "Annual flight frequency", "dataType": "number" },
+        { "id": "most_visited_destination", "name": "Most Visited Destination", "description": "Top destination airport", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "bookingMetrics",
+      "name": "Booking Metrics",
+      "description": "Booking behavior and statistics",
+      "category": "behavior",
+      "properties": [
+        { "id": "total_bookings", "name": "Total Bookings", "description": "Lifetime number of bookings", "dataType": "number" },
+        { "id": "total_amount_spent", "name": "Total Amount Spent", "description": "Lifetime spend in USD", "dataType": "number" },
+        { "id": "average_booking_value", "name": "Average Booking Value", "description": "Average spend per booking", "dataType": "number" },
+        { "id": "last_booking_date", "name": "Last Booking Date", "description": "Date of most recent booking", "dataType": "date" },
+        { "id": "booking_lead_time", "name": "Booking Lead Time", "description": "Average days before departure", "dataType": "number" },
+        { "id": "cancellation_rate", "name": "Cancellation Rate", "description": "Percentage of cancelled bookings", "dataType": "number" },
+        { "id": "round_trip_percentage", "name": "Round Trip Percentage", "description": "Percentage of round trip bookings", "dataType": "number" }
+      ]
+    }
+  ],
+  "engagements": [
+    {
+      "id": "flightBooking",
+      "name": "Flight Booking",
+      "description": "Flight reservation made",
+      "properties": [
+        { "id": "EventDate", "name": "Event Date", "description": "Booking timestamp", "dataType": "date" },
+        { "id": "JobId", "name": "Job ID", "description": "Job identifier", "dataType": "string" },
+        { "id": "JourneyName", "name": "Journey Name", "description": "Journey identifier", "dataType": "string" },
+        { "id": "SubscriberKey", "name": "Subscriber Key", "description": "Subscriber identifier", "dataType": "string" },
+        { "id": "TriggeredSendCustomerKey", "name": "Triggered Send Customer Key", "description": "Trigger key", "dataType": "string" },
+        { "id": "booking_id", "name": "Booking ID", "description": "Unique booking identifier", "dataType": "string" },
+        { "id": "origin", "name": "Origin", "description": "Departure airport code", "dataType": "string" },
+        { "id": "destination", "name": "Destination", "description": "Arrival airport code", "dataType": "string" },
+        { "id": "price", "name": "Price", "description": "Ticket price in USD", "dataType": "number" },
+        { "id": "class", "name": "Class", "description": "Cabin class", "dataType": "string", "allowedValues": ["economy", "premium-economy", "business", "first"] },
+        { "id": "is_round_trip", "name": "Round Trip", "description": "Whether booking is round trip", "dataType": "boolean" },
+        { "id": "departure_date", "name": "Departure Date", "description": "Flight departure date", "dataType": "date" }
+      ]
+    },
+    {
+      "id": "flightCompletion",
+      "name": "Flight Completion",
+      "description": "Flight successfully completed",
+      "properties": [
+        { "id": "flight_id", "name": "Flight ID", "description": "Flight identifier", "dataType": "string" },
+        { "id": "origin", "name": "Origin", "description": "Departure airport", "dataType": "string" },
+        { "id": "destination", "name": "Destination", "description": "Arrival airport", "dataType": "string" },
+        { "id": "miles", "name": "Miles", "description": "Flight distance in miles", "dataType": "number" },
+        { "id": "miles_earned", "name": "Miles Earned", "description": "Frequent flyer miles earned", "dataType": "number" },
+        { "id": "on_time", "name": "On Time", "description": "Whether flight departed on time", "dataType": "boolean" },
+        { "id": "delay_minutes", "name": "Delay Minutes", "description": "Delay duration in minutes", "dataType": "number" }
+      ]
+    },
+    {
+      "id": "seatUpgrade",
+      "name": "Seat Upgrade",
+      "description": "Cabin class upgrade purchased",
+      "properties": [
+        { "id": "upgrade_id", "name": "Upgrade ID", "description": "Upgrade transaction ID", "dataType": "string" },
+        { "id": "from_class", "name": "From Class", "description": "Original cabin class", "dataType": "string" },
+        { "id": "to_class", "name": "To Class", "description": "Upgraded cabin class", "dataType": "string" },
+        { "id": "price", "name": "Price", "description": "Upgrade cost in USD", "dataType": "number" },
+        { "id": "miles_used", "name": "Miles Used", "description": "Miles redeemed for upgrade", "dataType": "number" },
+        { "id": "flight_id", "name": "Flight ID", "description": "Associated flight", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "loungeVisit",
+      "name": "Lounge Visit",
+      "description": "Airport lounge accessed",
+      "properties": [
+        { "id": "visit_id", "name": "Visit ID", "description": "Visit identifier", "dataType": "string" },
+        { "id": "airport", "name": "Airport", "description": "Airport code", "dataType": "string" },
+        { "id": "lounge_name", "name": "Lounge Name", "description": "Name of lounge", "dataType": "string" },
+        { "id": "duration", "name": "Duration", "description": "Time spent in lounge (minutes)", "dataType": "number" },
+        { "id": "access_method", "name": "Access Method", "description": "How access was granted", "dataType": "string", "allowedValues": ["tier-status", "day-pass", "credit-card", "paid"] }
+      ]
+    },
+    {
+      "id": "appLogin",
+      "name": "App Login",
+      "description": "Mobile app login event",
+      "properties": [
+        { "id": "session_id", "name": "Session ID", "description": "Session identifier", "dataType": "string" },
+        { "id": "device", "name": "Device", "description": "Device type", "dataType": "string", "allowedValues": ["iOS", "Android"] },
+        { "id": "session_duration", "name": "Session Duration", "description": "Time spent in app (seconds)", "dataType": "number" },
+        { "id": "features_accessed", "name": "Features Accessed", "description": "App features used", "dataType": "string" },
+        { "id": "location", "name": "Location", "description": "Login location", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "milesRedemption",
+      "name": "Miles Redemption",
+      "description": "Frequent flyer miles redeemed",
+      "properties": [
+        { "id": "redemption_id", "name": "Redemption ID", "description": "Transaction identifier", "dataType": "string" },
+        { "id": "miles_used", "name": "Miles Used", "description": "Number of miles redeemed", "dataType": "number" },
+        { "id": "redemption_type", "name": "Redemption Type", "description": "What miles were used for", "dataType": "string", "allowedValues": ["flight", "upgrade", "merchandise", "partner", "donation"] },
+        { "id": "estimated_value", "name": "Estimated Value", "description": "Estimated cash value in USD", "dataType": "number" }
+      ]
+    },
+    {
+      "id": "checkin",
+      "name": "Check-in",
+      "description": "Flight check-in completed",
+      "properties": [
+        { "id": "checkin_id", "name": "Check-in ID", "description": "Check-in identifier", "dataType": "string" },
+        { "id": "method", "name": "Method", "description": "Check-in method", "dataType": "string", "allowedValues": ["mobile", "web", "kiosk", "counter"] },
+        { "id": "hours_before_flight", "name": "Hours Before Flight", "description": "Hours before departure", "dataType": "number" },
+        { "id": "seat_selected", "name": "Seat Selected", "description": "Seat number chosen", "dataType": "string" },
+        { "id": "baggage_count", "name": "Baggage Count", "description": "Number of bags checked", "dataType": "number" }
+      ]
+    }
+  ]
+}

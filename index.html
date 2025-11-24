@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relay42 Audience Builder</title>
+    <style>
+      /* Hide dnd-kit sortable drop indicator line */
+      [data-dnd-kit-sortable-drop-indicator],
+      .dnd-sortable-drop-indicator,
+      [class*="drop-indicator"],
+      [class*="sortable-indicator"] {
+        display: none !important;
+      }
+
+      /* Hide any thick blue borders during drag */
+      [data-dnd-kit-dragging] {
+        border-top: none !important;
+        border-bottom: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

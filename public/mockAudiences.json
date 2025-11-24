@@ -1,0 +1,706 @@
+[
+  {
+    "id": "audience_1732100000000",
+    "name": "VIP Platinum Shoppers",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732100001000",
+            "propertyId": "tier",
+            "propertyName": "Tier",
+            "parentName": "Membership Status",
+            "properties": [
+              { "id": "tier", "name": "Tier", "description": "Membership tier level", "dataType": "string", "allowedValues": ["bronze", "silver", "gold", "platinum"] },
+              { "id": "points_balance", "name": "Points Balance", "description": "Current loyalty points", "dataType": "number" }
+            ],
+            "operator": "equals",
+            "value": "platinum"
+          },
+          {
+            "id": "rule_1732100002000",
+            "propertyId": "lifetime_value",
+            "propertyName": "Lifetime Value",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "lifetime_value", "name": "Lifetime Value", "description": "Total amount spent in USD", "dataType": "number" },
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 5000
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "allTime",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "published",
+    "createdAt": "2024-11-15T10:30:00.000Z",
+    "modifiedAt": "2024-11-18T14:20:00.000Z",
+    "publishedAt": "2024-11-18T14:20:00.000Z"
+  },
+  {
+    "id": "audience_1732200000000",
+    "name": "Cart Abandoners - Last 7 Days",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732200001000",
+            "propertyId": "cart_abandonment_rate",
+            "propertyName": "Cart Abandonment Rate",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "cart_abandonment_rate", "name": "Cart Abandonment Rate", "description": "Percentage of abandoned carts", "dataType": "number" },
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 50
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "last7days",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "draft",
+    "createdAt": "2024-11-20T09:15:00.000Z",
+    "modifiedAt": "2024-11-21T11:45:00.000Z"
+  },
+  {
+    "id": "audience_1732300000000",
+    "name": "Beauty Enthusiasts",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732300001000",
+            "propertyId": "preferred_category",
+            "propertyName": "Preferred Category",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "preferred_category", "name": "Preferred Category", "description": "Most purchased category", "dataType": "string", "allowedValues": ["electronics", "clothing", "home", "beauty", "sports", "books"] },
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "equals",
+            "value": "beauty"
+          },
+          {
+            "id": "rule_1732300002000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" },
+              { "id": "lifetime_value", "name": "Lifetime Value", "description": "Total amount spent in USD", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 3
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "allTime",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "published",
+    "createdAt": "2024-11-10T13:00:00.000Z",
+    "modifiedAt": "2024-11-12T16:30:00.000Z",
+    "publishedAt": "2024-11-12T16:30:00.000Z"
+  },
+  {
+    "id": "audience_1732400000000",
+    "name": "Re-engage Dormant Users",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732400001000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" },
+              { "id": "last_purchase_date", "name": "Last Purchase Date", "description": "Date of most recent purchase", "dataType": "date" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 1
+          },
+          {
+            "id": "rule_1732400002000",
+            "propertyId": "total_site_visits",
+            "propertyName": "Total Site Visits",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" },
+              { "id": "last_visit_date", "name": "Last Visit Date", "description": "Most recent site visit", "dataType": "date" }
+            ],
+            "operator": "lessThan",
+            "value": 2
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "last90days",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [
+          {
+            "id": "rule_1732400003000",
+            "propertyId": "total_site_visits",
+            "propertyName": "Total Site Visits",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 1
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "last7days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "draft",
+    "createdAt": "2024-11-19T08:00:00.000Z",
+    "modifiedAt": "2024-11-21T10:15:00.000Z"
+  },
+  {
+    "id": "audience_1732500000000",
+    "name": "New Customer Welcome",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732500001000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" },
+              { "id": "first_purchase_date", "name": "First Purchase Date", "description": "Date of first purchase", "dataType": "date" }
+            ],
+            "operator": "equals",
+            "value": 1
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [
+          {
+            "id": "rule_1732500002000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 2
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "published",
+    "createdAt": "2024-11-05T15:20:00.000Z",
+    "modifiedAt": "2024-11-08T09:45:00.000Z",
+    "publishedAt": "2024-11-08T09:45:00.000Z"
+  },
+  {
+    "id": "audience_1732600000000",
+    "name": "High Engagement Shoppers",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732600001000",
+            "propertyId": "total_site_visits",
+            "propertyName": "Total Site Visits",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" },
+              { "id": "average_session_duration", "name": "Average Session Duration", "description": "Average time per visit (seconds)", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 10
+          },
+          {
+            "id": "rule_1732600002000",
+            "propertyId": "average_session_duration",
+            "propertyName": "Average Session Duration",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "average_session_duration", "name": "Average Session Duration", "description": "Average time per visit (seconds)", "dataType": "number" },
+              { "id": "product_views", "name": "Product Views", "description": "Total products viewed", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 180
+          },
+          {
+            "id": "rule_1732600003000",
+            "propertyId": "email_subscribed",
+            "propertyName": "Email Subscribed",
+            "parentName": "Customer Profile",
+            "properties": [
+              { "id": "email_subscribed", "name": "Email Subscribed", "description": "Marketing email subscription", "dataType": "boolean" },
+              { "id": "email", "name": "Email", "description": "Customer email address", "dataType": "string" }
+            ],
+            "operator": "isTrue"
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "draft",
+    "createdAt": "2024-11-17T12:00:00.000Z",
+    "modifiedAt": "2024-11-20T14:30:00.000Z"
+  },
+  {
+    "id": "audience_1732700000000",
+    "name": "Email Marketing Engaged",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732700001000",
+            "propertyId": "email_open_rate",
+            "propertyName": "Email Open Rate",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "email_open_rate", "name": "Email Open Rate", "description": "Email engagement rate", "dataType": "number" },
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 40
+          },
+          {
+            "id": "rule_1732700002000",
+            "propertyId": "email_subscribed",
+            "propertyName": "Email Subscribed",
+            "parentName": "Customer Profile",
+            "properties": [
+              { "id": "email_subscribed", "name": "Email Subscribed", "description": "Marketing email subscription", "dataType": "boolean" }
+            ],
+            "operator": "isTrue"
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "last90days",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "published",
+    "createdAt": "2024-11-01T10:00:00.000Z",
+    "modifiedAt": "2024-11-03T15:20:00.000Z",
+    "publishedAt": "2024-11-03T15:20:00.000Z"
+  },
+  {
+    "id": "audience_1732800000000",
+    "name": "At-Risk High Value Customers",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732800001000",
+            "propertyId": "lifetime_value",
+            "propertyName": "Lifetime Value",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "lifetime_value", "name": "Lifetime Value", "description": "Total amount spent in USD", "dataType": "number" },
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 2000
+          },
+          {
+            "id": "rule_1732800002000",
+            "propertyId": "total_site_visits",
+            "propertyName": "Total Site Visits",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" }
+            ],
+            "operator": "lessThan",
+            "value": 3
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "last60days",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [
+          {
+            "id": "rule_1732800003000",
+            "propertyId": "total_site_visits",
+            "propertyName": "Total Site Visits",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 3
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "draft",
+    "createdAt": "2024-11-14T11:30:00.000Z",
+    "modifiedAt": "2024-11-21T09:00:00.000Z"
+  },
+  {
+    "id": "audience_1732900000000",
+    "name": "Frequent Shoppers",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1732900001000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" },
+              { "id": "average_order_value", "name": "Average Order Value", "description": "Average spend per order", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 10
+          },
+          {
+            "id": "rule_1732900002000",
+            "propertyId": "average_order_value",
+            "propertyName": "Average Order Value",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "average_order_value", "name": "Average Order Value", "description": "Average spend per order", "dataType": "number" },
+              { "id": "return_rate", "name": "Return Rate", "description": "Percentage of returned orders", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 75
+          },
+          {
+            "id": "rule_1732900003000",
+            "propertyId": "return_rate",
+            "propertyName": "Return Rate",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "return_rate", "name": "Return Rate", "description": "Percentage of returned orders", "dataType": "number" }
+            ],
+            "operator": "lessThan",
+            "value": 20
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "allTime",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "published",
+    "createdAt": "2024-10-28T14:00:00.000Z",
+    "modifiedAt": "2024-11-02T10:30:00.000Z",
+    "publishedAt": "2024-11-02T10:30:00.000Z"
+  },
+  {
+    "id": "audience_1733000000000",
+    "name": "Electronics Shoppers - Holiday Season",
+    "sections": [
+      {
+        "id": "entry",
+        "title": "Enter audience if",
+        "rules": [
+          {
+            "id": "rule_1733000001000",
+            "propertyId": "preferred_category",
+            "propertyName": "Preferred Category",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "preferred_category", "name": "Preferred Category", "description": "Most purchased category", "dataType": "string", "allowedValues": ["electronics", "clothing", "home", "beauty", "sports", "books"] }
+            ],
+            "operator": "equals",
+            "value": "electronics"
+          },
+          {
+            "id": "rule_1733000002000",
+            "propertyId": "tier",
+            "propertyName": "Tier",
+            "parentName": "Membership Status",
+            "properties": [
+              { "id": "tier", "name": "Tier", "description": "Membership tier level", "dataType": "string", "allowedValues": ["bronze", "silver", "gold", "platinum"] }
+            ],
+            "operator": "equals",
+            "value": "gold"
+          },
+          {
+            "id": "rule_1733000003000",
+            "propertyId": "email_subscribed",
+            "propertyName": "Email Subscribed",
+            "parentName": "Customer Profile",
+            "properties": [
+              { "id": "email_subscribed", "name": "Email Subscribed", "description": "Marketing email subscription", "dataType": "boolean" }
+            ],
+            "operator": "isTrue"
+          }
+        ],
+        "matchType": "all",
+        "timePeriod": "allTime",
+        "isCollapsed": false
+      },
+      {
+        "id": "goals",
+        "title": "Goals",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "sync",
+        "title": "Sync and activation",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      },
+      {
+        "id": "exit",
+        "title": "Exit audience if",
+        "rules": [],
+        "matchType": "all",
+        "timePeriod": "last30days",
+        "isCollapsed": false
+      }
+    ],
+    "status": "draft",
+    "createdAt": "2024-11-21T16:00:00.000Z",
+    "modifiedAt": "2024-11-21T17:30:00.000Z"
+  }
+]

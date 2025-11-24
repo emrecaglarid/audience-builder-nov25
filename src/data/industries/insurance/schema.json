@@ -1,0 +1,208 @@
+{
+  "industryName": "Insurance",
+  "industryId": "insurance",
+  "facts": [
+    {
+      "id": "client",
+      "name": "Client",
+      "description": "Client information and demographics",
+      "category": "profile",
+      "properties": [
+        { "id": "agent_id", "name": "Agent ID", "description": "Insurance agent identifier", "dataType": "string" },
+        { "id": "agent_network_type", "name": "Agent Network Type", "description": "Type of agent network", "dataType": "string" },
+        { "id": "agent_type", "name": "Agent Type", "description": "Agent classification", "dataType": "string" },
+        { "id": "agent_zone", "name": "Agent Zone", "description": "Geographic agent zone", "dataType": "string" },
+        { "id": "car_category_code", "name": "Car Category Code", "description": "Vehicle category code", "dataType": "string" },
+        { "id": "car_license_plate", "name": "Car License Plate", "description": "Vehicle license plate number", "dataType": "string" },
+        { "id": "car_license_plate_age", "name": "Car License Plate Age", "description": "Age of vehicle registration", "dataType": "number" },
+        { "id": "car_license_plate_month", "name": "Car License Plate Month", "description": "Month of vehicle registration", "dataType": "number" },
+        { "id": "client_email", "name": "Client Email", "description": "Client email address", "dataType": "string" },
+        { "id": "client_fiscal_number", "name": "Client Fiscal Number", "description": "Tax identification number", "dataType": "string" },
+        { "id": "client_id", "name": "Client ID", "description": "Unique client identifier", "dataType": "string" },
+        { "id": "client_phone_number", "name": "Client Phone Number", "description": "Client contact number", "dataType": "string" },
+        { "id": "multi_id", "name": "Multi ID", "description": "Multi-policy identifier", "dataType": "string" },
+        { "id": "multi_type", "name": "Multi Type", "description": "Type of multi-policy package", "dataType": "string" },
+        { "id": "policy_collection_type", "name": "Policy Collection Type", "description": "Method of policy collection", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "policyMetrics",
+      "name": "Policy Metrics",
+      "description": "Policy details and metrics",
+      "category": "policy",
+      "properties": [
+        { "id": "policy_id", "name": "Policy ID", "description": "Unique policy identifier", "dataType": "string" },
+        { "id": "policy_type", "name": "Policy Type", "description": "Type of insurance policy", "dataType": "string", "allowedValues": ["auto", "home", "life", "health"] },
+        { "id": "policy_status", "name": "Policy Status", "description": "Current policy status", "dataType": "string", "allowedValues": ["active", "expired", "cancelled", "pending"] },
+        { "id": "coverage_amount", "name": "Coverage Amount", "description": "Total coverage amount in USD", "dataType": "number" },
+        { "id": "premium_amount", "name": "Premium Amount", "description": "Monthly premium amount in USD", "dataType": "number" },
+        { "id": "deductible", "name": "Deductible", "description": "Policy deductible amount", "dataType": "number" },
+        { "id": "policy_start_date", "name": "Policy Start Date", "description": "Policy effective start date", "dataType": "date" },
+        { "id": "policy_end_date", "name": "Policy End Date", "description": "Policy expiration date", "dataType": "date" },
+        { "id": "renewal_date", "name": "Renewal Date", "description": "Next renewal date", "dataType": "date" },
+        { "id": "payment_frequency", "name": "Payment Frequency", "description": "Premium payment schedule", "dataType": "string", "allowedValues": ["monthly", "quarterly", "annually"] },
+        { "id": "auto_renew_enabled", "name": "Auto Renew Enabled", "description": "Auto-renewal status", "dataType": "boolean" }
+      ]
+    },
+    {
+      "id": "claimMetrics",
+      "name": "Claim Metrics",
+      "description": "Historical claim statistics and metrics",
+      "category": "claims",
+      "properties": [
+        { "id": "total_claims", "name": "Total Claims", "description": "Lifetime number of claims", "dataType": "number" },
+        { "id": "total_claim_amount", "name": "Total Claim Amount", "description": "Total amount claimed in USD", "dataType": "number" },
+        { "id": "total_paid_amount", "name": "Total Paid Amount", "description": "Total amount paid in USD", "dataType": "number" },
+        { "id": "last_claim_date", "name": "Last Claim Date", "description": "Date of most recent claim", "dataType": "date" },
+        { "id": "claim_frequency_score", "name": "Claim Frequency Score", "description": "Claims per year average", "dataType": "number" },
+        { "id": "pending_claims", "name": "Pending Claims", "description": "Number of pending claims", "dataType": "number" },
+        { "id": "denied_claims", "name": "Denied Claims", "description": "Number of denied claims", "dataType": "number" },
+        { "id": "fraud_flags", "name": "Fraud Flags", "description": "Number of fraud investigation flags", "dataType": "number" }
+      ]
+    },
+    {
+      "id": "invoiceMetrics",
+      "name": "Invoice Metrics",
+      "description": "Billing and payment metrics",
+      "category": "billing",
+      "properties": [
+        { "id": "total_invoices", "name": "Total Invoices", "description": "Lifetime number of invoices", "dataType": "number" },
+        { "id": "total_amount_invoiced", "name": "Total Amount Invoiced", "description": "Total invoiced amount in USD", "dataType": "number" },
+        { "id": "total_amount_paid", "name": "Total Amount Paid", "description": "Total paid amount in USD", "dataType": "number" },
+        { "id": "outstanding_balance", "name": "Outstanding Balance", "description": "Current balance due in USD", "dataType": "number" },
+        { "id": "last_payment_date", "name": "Last Payment Date", "description": "Date of most recent payment", "dataType": "date" },
+        { "id": "last_payment_amount", "name": "Last Payment Amount", "description": "Most recent payment amount", "dataType": "number" },
+        { "id": "payment_method", "name": "Payment Method", "description": "Preferred payment method", "dataType": "string", "allowedValues": ["credit-card", "debit-card", "bank-transfer", "check"] },
+        { "id": "late_payments", "name": "Late Payments", "description": "Number of late payments", "dataType": "number" },
+        { "id": "payment_score", "name": "Payment Score", "description": "Payment reliability score (0-100)", "dataType": "number" }
+      ]
+    },
+    {
+      "id": "riskProfile",
+      "name": "Risk Profile",
+      "description": "Risk assessment and underwriting data",
+      "category": "underwriting",
+      "properties": [
+        { "id": "risk_score", "name": "Risk Score", "description": "Overall risk score (300-850)", "dataType": "number" },
+        { "id": "credit_score", "name": "Credit Score", "description": "Credit rating score", "dataType": "number" },
+        { "id": "driving_record_score", "name": "Driving Record Score", "description": "Driving history score", "dataType": "number" },
+        { "id": "accident_history", "name": "Accident History", "description": "Number of accidents", "dataType": "number" },
+        { "id": "violation_history", "name": "Violation History", "description": "Number of traffic violations", "dataType": "number" },
+        { "id": "home_age", "name": "Home Age", "description": "Age of insured property in years", "dataType": "number" },
+        { "id": "location_risk_level", "name": "Location Risk Level", "description": "Geographic risk level", "dataType": "string", "allowedValues": ["low", "medium", "high", "very-high"] }
+      ]
+    }
+  ],
+  "engagements": [
+    {
+      "id": "claim",
+      "name": "Claim",
+      "description": "Insurance claim submission",
+      "properties": [
+        { "id": "claim_date", "name": "Claim Date", "description": "Date claim occurred", "dataType": "date" },
+        { "id": "claim_id", "name": "Claim ID", "description": "Unique claim identifier", "dataType": "string" },
+        { "id": "claim_location", "name": "Claim Location", "description": "Location where claim occurred", "dataType": "string" },
+        { "id": "claim_management_area", "name": "Claim Management Area", "description": "Regional management area", "dataType": "string" },
+        { "id": "claim_provisions", "name": "Claim Provisions", "description": "Claim provision amount", "dataType": "number" },
+        { "id": "claim_status", "name": "Claim Status", "description": "Current claim status", "dataType": "string", "allowedValues": ["submitted", "under-review", "approved", "denied", "paid"] },
+        { "id": "claim_status_date", "name": "Claim Status Date", "description": "Date of status update", "dataType": "date" },
+        { "id": "claim_submission_date", "name": "Claim Submission Date", "description": "Date claim was submitted", "dataType": "date" },
+        { "id": "client_id", "name": "Client ID", "description": "Client identifier", "dataType": "string" },
+        { "id": "ids_type", "name": "IDS Type", "description": "Identification type", "dataType": "string" },
+        { "id": "policy_id", "name": "Policy ID", "description": "Associated policy ID", "dataType": "string" },
+        { "id": "product_id", "name": "Product ID", "description": "Product identifier", "dataType": "string" },
+        { "id": "claim_amount", "name": "Claim Amount", "description": "Claimed amount in USD", "dataType": "number" },
+        { "id": "approved_amount", "name": "Approved Amount", "description": "Approved claim amount in USD", "dataType": "number" }
+      ]
+    },
+    {
+      "id": "emailOpen",
+      "name": "Email Open",
+      "description": "Marketing email opened",
+      "properties": [
+        { "id": "EventDate", "name": "Event Date", "description": "Date and time of email open", "dataType": "date" },
+        { "id": "JobId", "name": "Job ID", "description": "Email job identifier", "dataType": "string" },
+        { "id": "JourneyName", "name": "Journey Name", "description": "Marketing journey name", "dataType": "string" },
+        { "id": "SubscriberKey", "name": "Subscriber Key", "description": "Subscriber identifier", "dataType": "string" },
+        { "id": "TriggeredSendCustomerKey", "name": "Triggered Send Customer Key", "description": "Triggered email customer key", "dataType": "string" },
+        { "id": "EmailSubject", "name": "Email Subject", "description": "Subject line of email", "dataType": "string" },
+        { "id": "CampaignID", "name": "Campaign ID", "description": "Marketing campaign ID", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "carPolicy",
+      "name": "Car Policy",
+      "description": "Auto insurance policy event",
+      "properties": [
+        { "id": "agent_id", "name": "Agent ID", "description": "Insurance agent ID", "dataType": "string" },
+        { "id": "agent_network_type", "name": "Agent Network Type", "description": "Agent network classification", "dataType": "string" },
+        { "id": "agent_type", "name": "Agent Type", "description": "Type of insurance agent", "dataType": "string" },
+        { "id": "agent_zone", "name": "Agent Zone", "description": "Agent geographic zone", "dataType": "string" },
+        { "id": "car_category_code", "name": "Car Category Code", "description": "Vehicle category", "dataType": "string" },
+        { "id": "car_license_plate", "name": "Car License Plate", "description": "License plate number", "dataType": "string" },
+        { "id": "car_license_plate_age", "name": "Car License Plate Age", "description": "Vehicle age", "dataType": "number" },
+        { "id": "car_license_plate_month", "name": "Car License Plate Month", "description": "Registration month", "dataType": "number" },
+        { "id": "client_email", "name": "Client Email", "description": "Client email", "dataType": "string" },
+        { "id": "client_fiscal_number", "name": "Client Fiscal Number", "description": "Tax ID", "dataType": "string" },
+        { "id": "client_id", "name": "Client ID", "description": "Client identifier", "dataType": "string" },
+        { "id": "client_phone_number", "name": "Client Phone Number", "description": "Contact phone", "dataType": "string" },
+        { "id": "multi_id", "name": "Multi ID", "description": "Multi-policy ID", "dataType": "string" },
+        { "id": "multi_type", "name": "Multi Type", "description": "Multi-policy type", "dataType": "string" },
+        { "id": "policy_collection_type", "name": "Policy Collection Type", "description": "Collection method", "dataType": "string" },
+        { "id": "policy_premium", "name": "Policy Premium", "description": "Policy premium amount", "dataType": "number" },
+        { "id": "coverage_type", "name": "Coverage Type", "description": "Type of coverage", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "policyRenewal",
+      "name": "Policy Renewal",
+      "description": "Insurance policy renewed",
+      "properties": [
+        { "id": "policy_id", "name": "Policy ID", "description": "Policy identifier", "dataType": "string" },
+        { "id": "policy_type", "name": "Policy Type", "description": "Type of policy", "dataType": "string" },
+        { "id": "previous_premium", "name": "Previous Premium", "description": "Premium before renewal", "dataType": "number" },
+        { "id": "new_premium", "name": "New Premium", "description": "Premium after renewal in USD", "dataType": "number" },
+        { "id": "coverage_change", "name": "Coverage Change", "description": "Change in coverage amount", "dataType": "number" },
+        { "id": "renewal_method", "name": "Renewal Method", "description": "How policy was renewed", "dataType": "string", "allowedValues": ["auto", "manual", "agent-assisted"] }
+      ]
+    },
+    {
+      "id": "quoteRequest",
+      "name": "Quote Request",
+      "description": "Insurance quote requested",
+      "properties": [
+        { "id": "quote_id", "name": "Quote ID", "description": "Quote identifier", "dataType": "string" },
+        { "id": "coverage_type", "name": "Coverage Type", "description": "Type of coverage quoted", "dataType": "string", "allowedValues": ["auto", "home", "life", "health", "umbrella"] },
+        { "id": "requested_amount", "name": "Requested Amount", "description": "Coverage amount requested in USD", "dataType": "number" },
+        { "id": "quoted_premium", "name": "Quoted Premium", "description": "Quoted premium amount", "dataType": "number" },
+        { "id": "converted", "name": "Converted", "description": "Whether quote led to policy purchase", "dataType": "boolean" },
+        { "id": "quote_valid_until", "name": "Quote Valid Until", "description": "Quote expiration date", "dataType": "date" }
+      ]
+    },
+    {
+      "id": "portalLogin",
+      "name": "Portal Login",
+      "description": "Customer portal login event",
+      "properties": [
+        { "id": "device", "name": "Device", "description": "Device type", "dataType": "string", "allowedValues": ["desktop", "mobile", "tablet"] },
+        { "id": "session_duration", "name": "Session Duration", "description": "Time spent in portal (seconds)", "dataType": "number" },
+        { "id": "pages_viewed", "name": "Pages Viewed", "description": "Number of pages accessed", "dataType": "number" },
+        { "id": "ip_address", "name": "IP Address", "description": "Login IP address", "dataType": "string" },
+        { "id": "login_location", "name": "Login Location", "description": "Geographic location", "dataType": "string" }
+      ]
+    },
+    {
+      "id": "paymentMade",
+      "name": "Payment Made",
+      "description": "Premium payment received",
+      "properties": [
+        { "id": "payment_id", "name": "Payment ID", "description": "Payment identifier", "dataType": "string" },
+        { "id": "amount", "name": "Amount", "description": "Payment amount in USD", "dataType": "number" },
+        { "id": "method", "name": "Method", "description": "Payment method", "dataType": "string", "allowedValues": ["credit-card", "debit-card", "bank-transfer", "check"] },
+        { "id": "is_late", "name": "Is Late", "description": "Whether payment was late", "dataType": "boolean" },
+        { "id": "policy_id", "name": "Policy ID", "description": "Associated policy", "dataType": "string" },
+        { "id": "confirmation_number", "name": "Confirmation Number", "description": "Payment confirmation", "dataType": "string" }
+      ]
+    }
+  ]
+}
