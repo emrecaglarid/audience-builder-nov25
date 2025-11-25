@@ -6,7 +6,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732100001000",
             "propertyId": "tier",
@@ -39,15 +39,28 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
-        "matchType": "all",
+        "items": [
+          {
+            "id": "rule_1732100003000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 2,
+            "comment": "Encourage repeat purchases"
+          }
+        ],
+        "matchType": "any",
         "timePeriod": "last30days",
         "isCollapsed": false
       },
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -55,16 +68,70 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [],
-        "matchType": "all",
-        "timePeriod": "last30days",
+        "items": [
+          {
+            "id": "rule_1732100004000",
+            "propertyId": "tier",
+            "propertyName": "Tier",
+            "parentName": "Membership Status",
+            "properties": [
+              { "id": "tier", "name": "Tier", "description": "Membership tier level", "dataType": "string", "allowedValues": ["bronze", "silver", "gold", "platinum"] }
+            ],
+            "operator": "notEquals",
+            "value": "platinum"
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "last7days",
         "isCollapsed": false
       }
     ],
     "status": "published",
     "createdAt": "2024-11-15T10:30:00.000Z",
     "modifiedAt": "2024-11-18T14:20:00.000Z",
-    "publishedAt": "2024-11-18T14:20:00.000Z"
+    "publishedAt": "2024-11-18T14:20:00.000Z",
+    "hasHistoricalData": true,
+    "syncDestinations": [
+      {
+        "id": "dest-ga-1",
+        "platformType": "google-ads",
+        "platformName": "Google Ads",
+        "accountId": "GA-8372615",
+        "accountName": "ACME Marketing",
+        "targetAudienceName": "VIP Platinum Lookalike",
+        "status": "active",
+        "syncFrequency": "daily",
+        "lastSyncAt": "2024-11-24T08:30:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 3421
+      },
+      {
+        "id": "dest-fb-1",
+        "platformType": "facebook",
+        "platformName": "Facebook Custom Audiences",
+        "accountId": "FB-5847392",
+        "accountName": "ACME Social",
+        "targetAudienceName": "Premium Segment",
+        "status": "active",
+        "syncFrequency": "realtime",
+        "lastSyncAt": "2024-11-24T11:45:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 3421
+      },
+      {
+        "id": "dest-braze-1",
+        "platformType": "braze",
+        "platformName": "Braze",
+        "accountId": "BZ-7283941",
+        "accountName": "ACME Mobile",
+        "targetAudienceName": "VIP Mobile Push",
+        "status": "active",
+        "syncFrequency": "realtime",
+        "lastSyncAt": "2024-11-24T11:50:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 3421
+      }
+    ]
   },
   {
     "id": "audience_1732200000000",
@@ -73,7 +140,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732200001000",
             "propertyId": "cart_abandonment_rate",
@@ -94,15 +161,28 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
-        "matchType": "all",
-        "timePeriod": "last30days",
+        "items": [
+          {
+            "id": "rule_1732200002000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 1,
+            "comment": "Complete checkout"
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "last7days",
         "isCollapsed": false
       },
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -110,9 +190,21 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [],
-        "matchType": "all",
-        "timePeriod": "last30days",
+        "items": [
+          {
+            "id": "rule_1732200003000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 1
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "last7days",
         "isCollapsed": false
       }
     ],
@@ -127,7 +219,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732300001000",
             "propertyId": "preferred_category",
@@ -160,15 +252,28 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
-        "matchType": "all",
+        "items": [
+          {
+            "id": "rule_1732300003000",
+            "propertyId": "average_order_value",
+            "propertyName": "Average Order Value",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "average_order_value", "name": "Average Order Value", "description": "Average spend per order", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 100,
+            "comment": "Increase basket size"
+          }
+        ],
+        "matchType": "any",
         "timePeriod": "last30days",
         "isCollapsed": false
       },
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -176,16 +281,56 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [],
-        "matchType": "all",
-        "timePeriod": "last30days",
+        "items": [
+          {
+            "id": "rule_1732300004000",
+            "propertyId": "email_subscribed",
+            "propertyName": "Email Subscribed",
+            "parentName": "Customer Profile",
+            "properties": [
+              { "id": "email_subscribed", "name": "Email Subscribed", "description": "Marketing email subscription", "dataType": "boolean" }
+            ],
+            "operator": "isFalse"
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "last7days",
         "isCollapsed": false
       }
     ],
     "status": "published",
     "createdAt": "2024-11-10T13:00:00.000Z",
     "modifiedAt": "2024-11-12T16:30:00.000Z",
-    "publishedAt": "2024-11-12T16:30:00.000Z"
+    "publishedAt": "2024-11-12T16:30:00.000Z",
+    "hasHistoricalData": true,
+    "syncDestinations": [
+      {
+        "id": "dest-fb-2",
+        "platformType": "facebook",
+        "platformName": "Facebook Custom Audiences",
+        "accountId": "FB-5847392",
+        "accountName": "ACME Social",
+        "targetAudienceName": "Beauty Lovers",
+        "status": "active",
+        "syncFrequency": "hourly",
+        "lastSyncAt": "2024-11-24T11:00:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 8934
+      },
+      {
+        "id": "dest-mc-1",
+        "platformType": "mailchimp",
+        "platformName": "Mailchimp",
+        "accountId": "MC-3829471",
+        "accountName": "ACME Newsletter",
+        "targetAudienceName": "Beauty Newsletter",
+        "status": "active",
+        "syncFrequency": "daily",
+        "lastSyncAt": "2024-11-24T08:00:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 8934
+      }
+    ]
   },
   {
     "id": "audience_1732400000000",
@@ -194,7 +339,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732400001000",
             "propertyId": "total_orders",
@@ -227,15 +372,40 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
-        "matchType": "all",
+        "items": [
+          {
+            "id": "rule_1732400003000",
+            "propertyId": "total_site_visits",
+            "propertyName": "Total Site Visits",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 1,
+            "comment": "Return to site"
+          },
+          {
+            "id": "rule_1732400004000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 1,
+            "comment": "Make a purchase"
+          }
+        ],
+        "matchType": "any",
         "timePeriod": "last30days",
         "isCollapsed": false
       },
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -243,9 +413,9 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [
+        "items": [
           {
-            "id": "rule_1732400003000",
+            "id": "rule_1732400005000",
             "propertyId": "total_site_visits",
             "propertyName": "Total Site Visits",
             "parentName": "Engagement Metrics",
@@ -272,7 +442,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732500001000",
             "propertyId": "total_orders",
@@ -293,7 +463,7 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732500002000",
             "propertyId": "total_orders",
@@ -303,7 +473,8 @@
               { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
             ],
             "operator": "greaterThanOrEqual",
-            "value": 2
+            "value": 2,
+            "comment": "Second purchase"
           }
         ],
         "matchType": "any",
@@ -313,7 +484,7 @@
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -321,8 +492,20 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [],
-        "matchType": "all",
+        "items": [
+          {
+            "id": "rule_1732500003000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 1
+          }
+        ],
+        "matchType": "any",
         "timePeriod": "last30days",
         "isCollapsed": false
       }
@@ -330,7 +513,36 @@
     "status": "published",
     "createdAt": "2024-11-05T15:20:00.000Z",
     "modifiedAt": "2024-11-08T09:45:00.000Z",
-    "publishedAt": "2024-11-08T09:45:00.000Z"
+    "publishedAt": "2024-11-08T09:45:00.000Z",
+    "hasHistoricalData": true,
+    "syncDestinations": [
+      {
+        "id": "dest-braze-2",
+        "platformType": "braze",
+        "platformName": "Braze",
+        "accountId": "BZ-7283941",
+        "accountName": "ACME Mobile",
+        "targetAudienceName": "Welcome Series",
+        "status": "active",
+        "syncFrequency": "realtime",
+        "lastSyncAt": "2024-11-24T11:50:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 2156
+      },
+      {
+        "id": "dest-mc-2",
+        "platformType": "mailchimp",
+        "platformName": "Mailchimp",
+        "accountId": "MC-3829471",
+        "accountName": "ACME Newsletter",
+        "targetAudienceName": "New Customer Nurture",
+        "status": "active",
+        "syncFrequency": "hourly",
+        "lastSyncAt": "2024-11-24T11:00:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 2156
+      }
+    ]
   },
   {
     "id": "audience_1732600000000",
@@ -339,7 +551,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732600001000",
             "propertyId": "total_site_visits",
@@ -383,15 +595,28 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
-        "matchType": "all",
+        "items": [
+          {
+            "id": "rule_1732600004000",
+            "propertyId": "total_orders",
+            "propertyName": "Total Orders",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "total_orders", "name": "Total Orders", "description": "Lifetime number of orders", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 1,
+            "comment": "First purchase"
+          }
+        ],
+        "matchType": "any",
         "timePeriod": "last30days",
         "isCollapsed": false
       },
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -399,7 +624,7 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -416,7 +641,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732700001000",
             "propertyId": "email_open_rate",
@@ -447,15 +672,28 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
-        "matchType": "all",
+        "items": [
+          {
+            "id": "rule_1732700003000",
+            "propertyId": "total_site_visits",
+            "propertyName": "Total Site Visits",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 2,
+            "comment": "Click through from email"
+          }
+        ],
+        "matchType": "any",
         "timePeriod": "last30days",
         "isCollapsed": false
       },
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -463,16 +701,43 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [],
-        "matchType": "all",
-        "timePeriod": "last30days",
+        "items": [
+          {
+            "id": "rule_1732700004000",
+            "propertyId": "email_subscribed",
+            "propertyName": "Email Subscribed",
+            "parentName": "Customer Profile",
+            "properties": [
+              { "id": "email_subscribed", "name": "Email Subscribed", "description": "Marketing email subscription", "dataType": "boolean" }
+            ],
+            "operator": "isFalse"
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "last7days",
         "isCollapsed": false
       }
     ],
     "status": "published",
     "createdAt": "2024-11-01T10:00:00.000Z",
     "modifiedAt": "2024-11-03T15:20:00.000Z",
-    "publishedAt": "2024-11-03T15:20:00.000Z"
+    "publishedAt": "2024-11-03T15:20:00.000Z",
+    "hasHistoricalData": true,
+    "syncDestinations": [
+      {
+        "id": "dest-mc-3",
+        "platformType": "mailchimp",
+        "platformName": "Mailchimp",
+        "accountId": "MC-3829471",
+        "accountName": "ACME Newsletter",
+        "targetAudienceName": "Engaged Subscribers",
+        "status": "active",
+        "syncFrequency": "daily",
+        "lastSyncAt": "2024-11-24T08:00:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 12451
+      }
+    ]
   },
   {
     "id": "audience_1732800000000",
@@ -481,7 +746,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732800001000",
             "propertyId": "lifetime_value",
@@ -513,15 +778,28 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
-        "matchType": "all",
+        "items": [
+          {
+            "id": "rule_1732800003000",
+            "propertyId": "total_site_visits",
+            "propertyName": "Total Site Visits",
+            "parentName": "Engagement Metrics",
+            "properties": [
+              { "id": "total_site_visits", "name": "Total Site Visits", "description": "Lifetime visit count", "dataType": "number" }
+            ],
+            "operator": "greaterThanOrEqual",
+            "value": 3,
+            "comment": "Re-engage with site"
+          }
+        ],
+        "matchType": "any",
         "timePeriod": "last30days",
         "isCollapsed": false
       },
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -529,9 +807,9 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [
+        "items": [
           {
-            "id": "rule_1732800003000",
+            "id": "rule_1732800004000",
             "propertyId": "total_site_visits",
             "propertyName": "Total Site Visits",
             "parentName": "Engagement Metrics",
@@ -558,7 +836,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1732900001000",
             "propertyId": "total_orders",
@@ -602,15 +880,28 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
-        "matchType": "all",
-        "timePeriod": "last30days",
+        "items": [
+          {
+            "id": "rule_1732900004000",
+            "propertyId": "lifetime_value",
+            "propertyName": "Lifetime Value",
+            "parentName": "Purchase History",
+            "properties": [
+              { "id": "lifetime_value", "name": "Lifetime Value", "description": "Total amount spent in USD", "dataType": "number" }
+            ],
+            "operator": "greaterThan",
+            "value": 1000,
+            "comment": "Cross $1k lifetime value"
+          }
+        ],
+        "matchType": "any",
+        "timePeriod": "allTime",
         "isCollapsed": false
       },
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -618,7 +909,7 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -627,7 +918,39 @@
     "status": "published",
     "createdAt": "2024-10-28T14:00:00.000Z",
     "modifiedAt": "2024-11-02T10:30:00.000Z",
-    "publishedAt": "2024-11-02T10:30:00.000Z"
+    "publishedAt": "2024-11-02T10:30:00.000Z",
+    "hasHistoricalData": true,
+    "syncDestinations": [
+      {
+        "id": "dest-ga-2",
+        "platformType": "google-ads",
+        "platformName": "Google Ads",
+        "accountId": "GA-8372615",
+        "accountName": "ACME Marketing",
+        "targetAudienceName": "Loyal Customer Lookalike",
+        "status": "active",
+        "syncFrequency": "daily",
+        "lastSyncAt": "2024-11-24T08:30:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 5621,
+        "trafficPercentage": 60
+      },
+      {
+        "id": "dest-tt-1",
+        "platformType": "tiktok",
+        "platformName": "TikTok Ads",
+        "accountId": "TT-9284761",
+        "accountName": "ACME Social",
+        "targetAudienceName": "Frequent Buyers Test",
+        "status": "active",
+        "syncFrequency": "daily",
+        "lastSyncAt": "2024-11-24T07:00:00Z",
+        "lastSyncStatus": "success",
+        "lastSyncCount": 3747,
+        "trafficPercentage": 40
+      }
+    ],
+    "experimentMode": true
   },
   {
     "id": "audience_1733000000000",
@@ -636,7 +959,7 @@
       {
         "id": "entry",
         "title": "Enter audience if",
-        "rules": [
+        "items": [
           {
             "id": "rule_1733000001000",
             "propertyId": "preferred_category",
@@ -677,7 +1000,7 @@
       {
         "id": "goals",
         "title": "Goals",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -685,7 +1008,7 @@
       {
         "id": "sync",
         "title": "Sync and activation",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false
@@ -693,7 +1016,7 @@
       {
         "id": "exit",
         "title": "Exit audience if",
-        "rules": [],
+        "items": [],
         "matchType": "all",
         "timePeriod": "last30days",
         "isCollapsed": false

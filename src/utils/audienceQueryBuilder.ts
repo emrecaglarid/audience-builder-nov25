@@ -16,13 +16,27 @@ interface AddedRule {
   trackVariable?: string;
 }
 
+interface RuleGroup {
+  id: string;
+  type: 'group';
+  matchType: 'all' | 'any';
+  rules: AddedRule[];
+  collapsed?: boolean;
+  name?: string;
+}
+
 interface SectionConfig {
   id: string;
   title: string;
-  rules: AddedRule[];
+  items: (AddedRule | RuleGroup)[];
   matchType: 'all' | 'any';
   timePeriod: string;
   isCollapsed: boolean;
+}
+
+// Type guard to check if an item is a RuleGroup
+function isRuleGroup(item: AddedRule | RuleGroup): item is RuleGroup {
+  return 'type' in item && item.type === 'group';
 }
 
 interface SchemaData {
@@ -159,17 +173,18 @@ function ruleToCondition(
 }
 
 /**
- * Convert a section to a ConditionGroup
+ * Convert a group of rules to a ConditionGroup
  */
-function sectionToConditionGroup(
+function groupToConditionGroup(
+  group: RuleGroup,
   section: SectionConfig,
   schema: SchemaData
 ): ConditionGroup | null {
-  // Filter to only complete rules (excludes disabled rules)
-  const completeRules = section.rules.filter(isRuleComplete);
+  // Filter to only complete rules in the group
+  const completeRules = group.rules.filter(isRuleComplete);
 
   if (completeRules.length === 0) {
-    return null; // No complete rules in this section
+    return null; // No complete rules in this group
   }
 
   // Separate excluded and included rules
@@ -181,24 +196,62 @@ function sectionToConditionGroup(
     .map(rule => ruleToCondition(rule, section, schema))
     .filter((c): c is FactCondition | EngagementCondition => c !== null);
 
-  // Convert excluded rules to conditions (will be wrapped in NOT)
+  // Convert excluded rules to conditions
   const excludedConditions = excludedRules
     .map(rule => ruleToCondition(rule, section, schema))
     .filter((c): c is FactCondition | EngagementCondition => c !== null);
 
-  // Build the final condition list
+  // Build the final condition list for this group
   const allConditions: Array<FactCondition | EngagementCondition | ConditionGroup> = [];
 
   // Add included conditions directly
   allConditions.push(...includedConditions);
 
-  // Wrap excluded conditions in an AND group
-  // Note: Excluded conditions will be handled by the query engine using negation
+  // Wrap excluded conditions
   if (excludedConditions.length > 0) {
     allConditions.push({
       operator: 'AND',
       conditions: excludedConditions,
     });
+  }
+
+  if (allConditions.length === 0) {
+    return null; // No valid conditions
+  }
+
+  // Return group with its own match type
+  return {
+    operator: group.matchType === 'all' ? 'AND' : 'OR',
+    conditions: allConditions,
+  };
+}
+
+/**
+ * Convert a section to a ConditionGroup
+ */
+function sectionToConditionGroup(
+  section: SectionConfig,
+  schema: SchemaData
+): ConditionGroup | null {
+  // Process all items (both rules and groups)
+  const allConditions: Array<FactCondition | EngagementCondition | ConditionGroup> = [];
+
+  for (const item of section.items) {
+    if (isRuleGroup(item)) {
+      // Process group
+      const groupCondition = groupToConditionGroup(item, section, schema);
+      if (groupCondition && groupCondition.conditions.length > 0) {
+        allConditions.push(groupCondition);
+      }
+    } else {
+      // Process individual rule
+      if (isRuleComplete(item)) {
+        const condition = ruleToCondition(item, section, schema);
+        if (condition) {
+          allConditions.push(condition);
+        }
+      }
+    }
   }
 
   if (allConditions.length === 0) {

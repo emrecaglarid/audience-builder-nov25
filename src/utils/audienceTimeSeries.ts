@@ -6,10 +6,31 @@
 import type { Customer } from '@/types';
 import type { MatchType, TimePeriod } from '@/components/AudienceBuilder/CriteriaSection';
 
+// Import types for items array
+interface AddedRule {
+  id: string;
+  propertyId: string;
+  operator?: string;
+  value?: any;
+  disabled?: boolean;
+}
+
+interface RuleGroup {
+  id: string;
+  type: 'group';
+  matchType: MatchType;
+  rules: AddedRule[];
+}
+
+// Type guard to check if an item is a RuleGroup
+function isRuleGroup(item: AddedRule | RuleGroup): item is RuleGroup {
+  return 'type' in item && item.type === 'group';
+}
+
 export interface SectionConfig {
   id: string;
   title: string;
-  rules: any[];
+  items: (AddedRule | RuleGroup)[];
   matchType: MatchType;
   timePeriod: TimePeriod;
   isCollapsed: boolean;
@@ -95,8 +116,10 @@ export function generateTimeSeriesData(
 
     // Mock goal data
     const goals: DailySnapshot['goals'] = {};
-    if (goalsSection && goalsSection.rules.length > 0) {
-      goalsSection.rules.forEach((_rule, index) => {
+    if (goalsSection && goalsSection.items.length > 0) {
+      // Filter out groups, only process rules
+      const goalRules = goalsSection.items.filter(item => !isRuleGroup(item)) as AddedRule[];
+      goalRules.forEach((_rule, index) => {
         const completions = Math.floor(Math.random() * 20) + 5;
         const avgValue = Math.floor(Math.random() * 150) + 50; // $50-$200
         goals[`goal-${index}`] = {
@@ -136,8 +159,10 @@ export function generateTimeSeriesData(
 
   // Aggregate goal data
   const goalsSummary: TimeSeriesData['summary']['goals'] = {};
-  if (goalsSection && goalsSection.rules.length > 0) {
-    goalsSection.rules.forEach((rule, index) => {
+  if (goalsSection && goalsSection.items.length > 0) {
+    // Filter out groups, only process rules
+    const goalRules = goalsSection.items.filter(item => !isRuleGroup(item)) as AddedRule[];
+    goalRules.forEach((rule, index) => {
       const goalId = `goal-${index}`;
       const goalData = daily.map(d => d.goals[goalId]).filter(Boolean);
 

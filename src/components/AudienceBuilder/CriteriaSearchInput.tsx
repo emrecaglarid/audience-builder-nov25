@@ -23,6 +23,7 @@ interface SuggestionPill {
 }
 
 export function CriteriaSearchInput({
+  sectionId,
   facts,
   engagements,
   shouldFocus = false,
@@ -39,14 +40,50 @@ export function CriteriaSearchInput({
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Suggestion pills data
-  const suggestionPills: SuggestionPill[] = [
-    { label: 'Age', isAI: false },
-    { label: 'Page visit', isAI: false },
-    { label: 'Men over 40', isAI: true },
-    { label: 'Country', isAI: false },
-    { label: 'Frequent visitors without purchase', isAI: true },
-  ];
+  // Suggestion pills data - section-specific, properties first, then AI prompts
+  const getSuggestionPills = (sectionId?: string): SuggestionPill[] => {
+    switch (sectionId) {
+      case 'entry':
+        return [
+          // Properties first
+          { label: 'Age', isAI: false },
+          { label: 'Country', isAI: false },
+          { label: 'Gender', isAI: false },
+          // AI prompts second
+          { label: 'High-value customers', isAI: true },
+          { label: 'New visitors', isAI: true },
+        ];
+      case 'goals':
+        return [
+          // Properties first
+          { label: 'Page visit', isAI: false },
+          { label: 'Order', isAI: false },
+          { label: 'Email open', isAI: false },
+          // AI prompts second
+          { label: 'Made a purchase', isAI: true },
+          { label: 'Engaged with content', isAI: true },
+        ];
+      case 'exit':
+        return [
+          // Properties first
+          { label: 'Days since last visit', isAI: false },
+          { label: 'Order count', isAI: false },
+          { label: 'Email subscribed', isAI: false },
+          // AI prompts second
+          { label: 'Inactive for 30+ days', isAI: true },
+          { label: 'Unsubscribed from emails', isAI: true },
+        ];
+      default:
+        // Fallback for other sections (sync, etc.)
+        return [
+          { label: 'Age', isAI: false },
+          { label: 'Country', isAI: false },
+          { label: 'Page visit', isAI: false },
+        ];
+    }
+  };
+
+  const suggestionPills = getSuggestionPills(sectionId);
 
   // Auto-focus input when section becomes active
   useEffect(() => {
@@ -228,7 +265,7 @@ export function CriteriaSearchInput({
     <Box position="relative" px={3} py={3}>
       <Input
         ref={inputRef}
-        placeholder="Search attributes or describe a segment"
+        placeholder="Search properties or describe profiles"
         value={searchValue}
         onChange={(e) => setSearchValue(e.target.value)}
         onKeyDown={handleKeyDown}

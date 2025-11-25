@@ -1,5 +1,6 @@
 import type { MatchType, TimePeriod } from '../components/AudienceBuilder/CriteriaSection';
 import type { PropertyDefinition } from '../types/schema';
+import type { AddedDestination } from '../types/destination';
 
 export interface SavedAudienceRule {
   id: string;
@@ -16,7 +17,26 @@ export interface SavedAudienceRule {
   trackVariable?: string;
 }
 
+export interface SavedRuleGroup {
+  id: string;
+  type: 'group';
+  matchType: MatchType;
+  rules: SavedAudienceRule[];
+  collapsed?: boolean;
+  name?: string;
+}
+
 export interface SavedAudienceSection {
+  id: string;
+  title: string;
+  items: (SavedAudienceRule | SavedRuleGroup)[];
+  matchType: MatchType;
+  timePeriod: TimePeriod;
+  isCollapsed: boolean;
+}
+
+// Legacy type for backward compatibility
+interface LegacySavedAudienceSection {
   id: string;
   title: string;
   rules: SavedAudienceRule[];
@@ -33,6 +53,10 @@ export interface SavedAudience {
   createdAt: string;
   modifiedAt: string;
   publishedAt?: string;
+  syncDestinations?: AddedDestination[];
+  experimentMode?: boolean;
+  hasHistoricalData?: boolean;
+  historicalDataLoadedAt?: string;
 }
 
 const STORAGE_KEY = 'relay42_audiences';
@@ -91,7 +115,35 @@ export function clearMockDataFlag(): void {
   localStorage.removeItem(MOCK_DATA_LOADED_KEY);
 }
 
-export function saveAudience(audience: Omit<SavedAudience, 'id' | 'createdAt' | 'modifiedAt' | 'publishedAt'> & { id?: string; publishedAt?: string }): SavedAudience {
+// Migration function to convert old schema (rules) to new schema (items)
+function migrateSectionSchema(section: any): SavedAudienceSection {
+  // If section has 'rules' property (old schema), migrate to 'items'
+  if ('rules' in section && !('items' in section)) {
+    const { rules, ...rest } = section;
+    return {
+      ...rest,
+      items: rules, // Rename rules to items
+    };
+  }
+  // Already using new schema
+  return section as SavedAudienceSection;
+}
+
+// Migration function for entire audience
+function migrateAudienceSchema(audience: any): SavedAudience {
+  return {
+    ...audience,
+    sections: audience.sections.map(migrateSectionSchema),
+  };
+}
+
+export function saveAudience(
+  audience: Omit<SavedAudience, 'id' | 'createdAt' | 'modifiedAt' | 'publishedAt'> & {
+    id?: string;
+    publishedAt?: string;
+    historicalDataLoadedAt?: string;
+  }
+): SavedAudience {
   const audiences = getAudiences();
 
   const now = new Date().toISOString();
@@ -105,6 +157,10 @@ export function saveAudience(audience: Omit<SavedAudience, 'id' | 'createdAt' | 
     createdAt: existing?.createdAt || now,
     modifiedAt: now,
     publishedAt: audience.status === 'published' ? (audience.publishedAt || now) : existing?.publishedAt,
+    syncDestinations: audience.syncDestinations,
+    experimentMode: audience.experimentMode,
+    hasHistoricalData: audience.hasHistoricalData,
+    historicalDataLoadedAt: audience.historicalDataLoadedAt,
   };
 
   const updatedAudiences = audience.id
@@ -118,7 +174,11 @@ export function saveAudience(audience: Omit<SavedAudience, 'id' | 'createdAt' | 
 export function getAudiences(): SavedAudience[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+
+    const audiences = JSON.parse(data);
+    // Migrate each audience to new schema
+    return audiences.map(migrateAudienceSchema);
   } catch (error) {
     console.error('Failed to load audiences from localStorage:', error);
     return [];
@@ -127,6 +187,7 @@ export function getAudiences(): SavedAudience[] {
 
 export function getAudience(id: string): SavedAudience | null {
   const audiences = getAudiences();
+  // getAudiences already migrates, so no need to migrate again
   return audiences.find(a => a.id === id) || null;
 }
 

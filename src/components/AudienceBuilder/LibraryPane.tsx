@@ -1,4 +1,5 @@
 import { Box, Text, VStack, Flex, Input, IconButton, Badge } from '@chakra-ui/react'
+import { Tooltip } from '@chakra-ui/react'
 import SearchIcon from '@mui/icons-material/Search'
 import ClearIcon from '@mui/icons-material/Clear'
 import CloseIcon from '@mui/icons-material/Close'
@@ -6,15 +7,29 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import AddIcon from '@mui/icons-material/Add'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import { useState, useMemo } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { FactDefinition, EngagementDefinition, PropertyDefinition, PropertyReference } from '@/types'
+
+// Map section titles to concise tooltip text
+function getSectionTooltipText(sectionTitle: string): string {
+  const tooltipMap: Record<string, string> = {
+    'Enter audience if': 'entry criteria',
+    'Exit audience if': 'exit criteria',
+    'Goals': 'goals',
+    'Sync and activation': 'sync and activation',
+  }
+
+  return tooltipMap[sectionTitle] || sectionTitle.toLowerCase()
+}
 
 interface LibraryPaneProps {
   facts: FactDefinition[]
   engagements: EngagementDefinition[]
   recentlyUsed: PropertyReference[]
   isVisible: boolean
+  activeSectionName?: string
   onItemClick: (item: FactDefinition | EngagementDefinition, type: 'fact' | 'engagement') => void
   onPropertyClick: (propertyRef: PropertyReference) => void
   onClose: () => void
@@ -31,6 +46,7 @@ interface DraggablePropertyItemProps {
   propertyRef: PropertyReference
   propertyKey: string
   hoveredProperty: string | null
+  activeSectionName: string
   onMouseEnter: () => void
   onMouseLeave: () => void
   onClick: () => void
@@ -41,6 +57,7 @@ function DraggablePropertyItem({
   propertyRef,
   propertyKey,
   hoveredProperty,
+  activeSectionName,
   onMouseEnter,
   onMouseLeave,
   onClick,
@@ -53,28 +70,38 @@ function DraggablePropertyItem({
     },
   })
 
-  const tooltipText = `${property.name}\n${property.description}\n${property.dataType}${
-    property.allowedValues ? `\nValues: ${property.allowedValues.slice(0, 3).join(', ')}` : ''
-  }`
+  const isHovered = hoveredProperty === propertyKey
 
   return (
     <Flex
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       align="center"
       justify="space-between"
       px={4}
       py={2}
-      cursor={isDragging ? 'grabbing' : 'grab'}
+      cursor="pointer"
       _hover={{ bg: 'blue.50' }}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      title={tooltipText}
       opacity={isDragging ? 0.5 : 1}
       transition="opacity 0.2s"
     >
+      {/* Drag handle - visible on hover */}
+      <Box
+        opacity={isHovered ? 1 : 0}
+        transition="opacity 0.2s"
+        mr={2}
+        display="flex"
+        alignItems="center"
+        color="gray.400"
+        cursor={isDragging ? 'grabbing' : 'grab'}
+        {...listeners}
+        {...attributes}
+      >
+        <DragIndicatorIcon fontSize="small" style={{ fontSize: '16px' }} />
+      </Box>
+
       <Box flex={1}>
         <Text fontSize="sm">{property.name}</Text>
         {property.description && (
@@ -83,17 +110,30 @@ function DraggablePropertyItem({
           </Text>
         )}
       </Box>
-      <Box
-        opacity={hoveredProperty === propertyKey ? 1 : 0}
-        transition="opacity 0.2s"
-      >
-        <AddIcon fontSize="small" style={{ fontSize: '16px', color: '#3182CE' }} />
-      </Box>
+
+      {/* Add button with tooltip */}
+      <Tooltip.Root positioning={{ placement: 'left' }}>
+        <Tooltip.Trigger asChild>
+          <Box
+            opacity={isHovered ? 1 : 0}
+            transition="opacity 0.2s"
+            display="flex"
+            alignItems="center"
+          >
+            <AddIcon fontSize="small" style={{ fontSize: '16px', color: '#3182CE' }} />
+          </Box>
+        </Tooltip.Trigger>
+        <Tooltip.Positioner>
+          <Tooltip.Content>
+            Add to {getSectionTooltipText(activeSectionName)}
+          </Tooltip.Content>
+        </Tooltip.Positioner>
+      </Tooltip.Root>
     </Flex>
   )
 }
 
-function LibraryPane({ facts, engagements, isVisible, onPropertyClick, onClose }: LibraryPaneProps) {
+function LibraryPane({ facts, engagements, isVisible, activeSectionName = 'section', onPropertyClick, onClose }: LibraryPaneProps) {
   if (!isVisible) return null
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -440,6 +480,7 @@ function LibraryPane({ facts, engagements, isVisible, onPropertyClick, onClose }
                   propertyRef={propertyRef}
                   propertyKey={propertyKey}
                   hoveredProperty={hoveredProperty}
+                  activeSectionName={activeSectionName}
                   onMouseEnter={() => setHoveredProperty(propertyKey)}
                   onMouseLeave={() => setHoveredProperty(null)}
                   onClick={() => handlePropertyClickInternal(property)}

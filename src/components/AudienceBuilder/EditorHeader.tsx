@@ -6,6 +6,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert'
 import FileCopyIcon from '@mui/icons-material/FileCopy'
 import HistoryIcon from '@mui/icons-material/History'
 import DeleteIcon from '@mui/icons-material/Delete'
+import UnpublishedIcon from '@mui/icons-material/Unpublished'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -23,6 +24,10 @@ interface EditorHeaderProps {
   onAnalyze: () => void
   onEdit: () => void
   lastModified: string
+  hasHistoricalData?: boolean
+  isLoadingData?: boolean
+  onLoadHistoricalData?: () => void
+  onUnpublish?: () => void
 }
 
 function EditorHeader({
@@ -36,7 +41,11 @@ function EditorHeader({
   onPublish,
   onAnalyze,
   onEdit,
-  lastModified
+  lastModified,
+  hasHistoricalData,
+  isLoadingData,
+  onLoadHistoricalData,
+  onUnpublish
 }: EditorHeaderProps) {
   const navigate = useNavigate()
   const [isEditingName, setIsEditingName] = useState(false)
@@ -131,13 +140,18 @@ function EditorHeader({
           </Flex>
 
           {/* Secondary actions - left */}
-          {isViewMode && status === 'published' && (
-            <Button variant="outline" size="md" onClick={() => console.log('Historical data clicked')}>
-              Historical data
+          {isViewMode && status === 'published' && onLoadHistoricalData && (
+            <Button
+              variant="outline"
+              size="md"
+              onClick={onLoadHistoricalData}
+              disabled={isLoadingData}
+            >
+              Load Historical Data
             </Button>
           )}
 
-          {!isViewMode && hasCompleteRule && (
+          {!isViewMode && hasCompleteRule && status === 'published' && (
             <Button variant="outline" size="md" onClick={onAnalyze}>
               Analyze
             </Button>
@@ -156,7 +170,7 @@ function EditorHeader({
             </Button>
           )}
 
-          {hasUnsavedChanges && status === 'published' && (
+          {hasUnsavedChanges && status === 'published' && !isViewMode && (
             <Button colorScheme="purple" size="md" onClick={onSave}>
               Save changes
             </Button>
@@ -200,6 +214,15 @@ function EditorHeader({
                     <Text>Activity log</Text>
                   </Flex>
                 </Menu.Item>
+
+                {status === 'published' && onUnpublish && (
+                  <Menu.Item value="unpublish" onClick={onUnpublish}>
+                    <Flex align="center" gap={2}>
+                      <UnpublishedIcon fontSize="small" />
+                      <Text>Unpublish</Text>
+                    </Flex>
+                  </Menu.Item>
+                )}
 
                 <Menu.Item value="delete" onClick={() => console.log('Delete clicked')}>
                   <Flex align="center" gap={2} color="red.500">

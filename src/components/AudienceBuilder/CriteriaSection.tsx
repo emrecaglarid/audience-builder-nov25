@@ -5,6 +5,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { RuleRow } from './RuleRow';
+import { RuleGroup } from './RuleGroup';
 import { CriteriaSearchInput } from './CriteriaSearchInput';
 import type { PropertyDefinition, FactDefinition, EngagementDefinition } from '../../types/schema';
 import type { PropertyMatch } from './PropertyDropdown';
@@ -13,7 +14,7 @@ import type { AISuggestion } from './aiSuggestions';
 export type MatchType = 'all' | 'any';
 export type TimePeriod = 'last7days' | 'last30days' | 'last90days' | 'lastYear' | 'allTime' | 'customRange';
 
-interface AddedRule {
+export interface AddedRule {
   id: string;
   propertyId: string;
   propertyName: string;
@@ -28,15 +29,31 @@ interface AddedRule {
   trackVariable?: string;
 }
 
+export interface RuleGroup {
+  id: string;
+  type: 'group';
+  matchType: MatchType;
+  rules: AddedRule[];
+  collapsed?: boolean;
+  name?: string;
+}
+
+// Type guard to check if an item is a RuleGroup
+export function isRuleGroup(item: AddedRule | RuleGroup): item is RuleGroup {
+  return 'type' in item && item.type === 'group';
+}
+
 interface CriteriaSectionProps {
   sectionId: string;
   title: string;
-  rules: AddedRule[];
+  items: (AddedRule | RuleGroup)[];
   matchType: MatchType;
   timePeriod: TimePeriod;
   isCollapsed?: boolean;
   shouldFocusInput?: boolean;
   isActive?: boolean;
+  isInSelectionMode?: boolean;
+  selectedRuleIds?: Set<string>;
   facts: FactDefinition[];
   engagements: EngagementDefinition[];
   onMatchTypeChange: (matchType: MatchType) => void;
@@ -50,6 +67,13 @@ interface CriteriaSectionProps {
   onRuleTrackVariableChange: (ruleId: string, variable: string) => void;
   onAddProperty: (match: PropertyMatch) => void;
   onAddAISuggestions: (suggestions: AISuggestion[]) => void;
+  onEnterSelectionMode: () => void;
+  onExitSelectionMode: () => void;
+  onToggleRuleSelection: (ruleId: string) => void;
+  onGroupSelected: () => void;
+  onUngroupGroup: (groupId: string) => void;
+  onGroupMatchTypeChange: (groupId: string, matchType: MatchType) => void;
+  onRenameGroup: (groupId: string, name: string) => void;
   onToggleCollapse?: () => void;
   onSetActive?: () => void;
 }
@@ -66,12 +90,14 @@ const TIME_PERIOD_LABELS: Record<TimePeriod, string> = {
 export const CriteriaSection = ({
   sectionId,
   title,
-  rules,
+  items,
   matchType,
   timePeriod,
   isCollapsed = false,
   shouldFocusInput = false,
   isActive = false,
+  isInSelectionMode = false,
+  selectedRuleIds = new Set(),
   facts,
   engagements,
   onMatchTypeChange,
@@ -84,9 +110,18 @@ export const CriteriaSection = ({
   onRuleTrackVariableChange,
   onAddProperty,
   onAddAISuggestions,
+  onEnterSelectionMode,
+  onExitSelectionMode,
+  onToggleRuleSelection,
+  onGroupSelected,
+  onUngroupGroup,
+  onGroupMatchTypeChange,
+  onRenameGroup,
   onToggleCollapse,
   onSetActive,
 }: CriteriaSectionProps) => {
+  // Extract only AddedRule items for display count (not groups)
+  const rules = items.filter(item => !isRuleGroup(item)) as AddedRule[];
 
   // Set up droppable for this section
   const { setNodeRef, isOver } = useDroppable({
@@ -168,6 +203,13 @@ export const CriteriaSection = ({
                     >
                       any of the rules below match
                     </Menu.Item>
+                    <Menu.Separator />
+                    <Menu.Item
+                      value="group-rules"
+                      onClick={onEnterSelectionMode}
+                    >
+                      Group rules...
+                    </Menu.Item>
                   </Menu.Content>
                 </Menu.Positioner>
               </Menu.Root>
@@ -212,34 +254,100 @@ export const CriteriaSection = ({
       {/* Section Content */}
       {!isCollapsed && (
         <>
-          {/* Rules table */}
-          {rules.length > 0 && (
+          {/* Selection mode header */}
+          {isInSelectionMode && (
+            <Flex
+              align="center"
+              justify="space-between"
+              px={4}
+              py={2}
+              bg="blue.50"
+              borderBottom="1px solid"
+              borderColor="blue.200"
+            >
+              <Text fontSize="sm" color="blue.700" fontWeight="medium">
+                Select rules to group ({selectedRuleIds.size} selected)
+              </Text>
+              <Flex gap={2}>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  onClick={onExitSelectionMode}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="xs"
+                  colorScheme="blue"
+                  onClick={onGroupSelected}
+                  disabled={selectedRuleIds.size < 2}
+                >
+                  Group {selectedRuleIds.size} rules
+                </Button>
+              </Flex>
+            </Flex>
+          )}
+
+          {/* Items list (rules + groups) */}
+          {items.length > 0 && (
             <SortableContext
-              items={rules.map(rule => rule.id)}
+              items={items.map(item => item.id)}
               strategy={verticalListSortingStrategy}
             >
               <Box>
-                {rules.map((rule) => (
-                  <RuleRow
-                    key={rule.id}
-                    ruleId={rule.id}
-                    ruleName={rule.propertyName}
-                    parentName={rule.parentName}
-                    properties={rule.properties}
-                    preSelectedProperty={rule.propertyId}
-                    excluded={rule.excluded}
-                    disabled={rule.disabled}
-                    comment={rule.comment}
-                    trackVariable={rule.trackVariable}
-                    sectionId={sectionId}
-                    onDelete={() => onRuleDelete(rule.id)}
-                    onChange={(data) => onRuleChange(rule.id, data)}
-                    onToggleExcluded={() => onRuleToggleExcluded(rule.id)}
-                    onToggleDisabled={() => onRuleToggleDisabled(rule.id)}
-                    onCommentChange={(comment) => onRuleCommentChange(rule.id, comment)}
-                    onTrackVariableChange={(variable) => onRuleTrackVariableChange(rule.id, variable)}
-                  />
-                ))}
+                {items.map((item) => {
+                  // Render group
+                  if (isRuleGroup(item)) {
+                    return (
+                      <RuleGroup
+                        key={item.id}
+                        groupId={item.id}
+                        name={item.name}
+                        matchType={item.matchType}
+                        rules={item.rules}
+                        isCollapsed={item.collapsed}
+                        sectionId={sectionId}
+                        facts={facts}
+                        engagements={engagements}
+                        onMatchTypeChange={(matchType) => onGroupMatchTypeChange(item.id, matchType)}
+                        onRuleDelete={onRuleDelete}
+                        onRuleChange={onRuleChange}
+                        onRuleToggleExcluded={onRuleToggleExcluded}
+                        onRuleToggleDisabled={onRuleToggleDisabled}
+                        onRuleCommentChange={onRuleCommentChange}
+                        onRuleTrackVariableChange={onRuleTrackVariableChange}
+                        onUngroup={() => onUngroupGroup(item.id)}
+                        onRename={(name) => onRenameGroup(item.id, name)}
+                      />
+                    );
+                  }
+
+                  // Render rule
+                  return (
+                    <RuleRow
+                      key={item.id}
+                      ruleId={item.id}
+                      ruleName={item.propertyName}
+                      parentName={item.parentName}
+                      properties={item.properties}
+                      preSelectedProperty={item.propertyId}
+                      excluded={item.excluded}
+                      disabled={item.disabled}
+                      comment={item.comment}
+                      trackVariable={item.trackVariable}
+                      sectionId={sectionId}
+                      isInSelectionMode={isInSelectionMode}
+                      isSelected={selectedRuleIds.has(item.id)}
+                      onDelete={() => onRuleDelete(item.id)}
+                      onChange={(data) => onRuleChange(item.id, data)}
+                      onToggleExcluded={() => onRuleToggleExcluded(item.id)}
+                      onToggleDisabled={() => onRuleToggleDisabled(item.id)}
+                      onCommentChange={(comment) => onRuleCommentChange(item.id, comment)}
+                      onTrackVariableChange={(variable) => onRuleTrackVariableChange(item.id, variable)}
+                      onToggleSelection={() => onToggleRuleSelection(item.id)}
+                    />
+                  );
+                })}
               </Box>
             </SortableContext>
           )}

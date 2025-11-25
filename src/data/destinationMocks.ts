@@ -272,42 +272,54 @@ export const availableDestinations: Destination[] = [
 ];
 
 /**
- * Get platform display metadata (color, icon name, etc.)
+ * Get platform display metadata (color, icon, etc.)
  */
 export function getPlatformMeta(platformType: PlatformType) {
   const metadata: Record<
     PlatformType,
-    { color: string; bgColor: string; displayName: string }
+    { color: string; bgColor: string; displayName: string; icon: string; colorScheme: string }
   > = {
     'google-ads': {
       color: '#4285F4',
       bgColor: '#E8F0FE',
       displayName: 'Google Ads',
+      icon: '🎯',
+      colorScheme: 'blue',
     },
     facebook: {
       color: '#1877F2',
       bgColor: '#E7F3FF',
       displayName: 'Facebook',
+      icon: '👤',
+      colorScheme: 'blue',
     },
     salesforce: {
       color: '#00A1E0',
       bgColor: '#E0F3FF',
       displayName: 'Salesforce',
+      icon: '☁️',
+      colorScheme: 'cyan',
     },
     braze: {
       color: '#FF6B6B',
       bgColor: '#FFE8E8',
       displayName: 'Braze',
+      icon: '🔥',
+      colorScheme: 'red',
     },
     mailchimp: {
       color: '#FFE01B',
       bgColor: '#FFFBEB',
       displayName: 'Mailchimp',
+      icon: '✉️',
+      colorScheme: 'yellow',
     },
     tiktok: {
       color: '#000000',
       bgColor: '#F3F4F6',
       displayName: 'TikTok',
+      icon: '🎵',
+      colorScheme: 'gray',
     },
   };
 

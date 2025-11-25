@@ -1,8 +1,8 @@
-import { Box, VStack, Text, Flex, Badge } from '@chakra-ui/react';
+import { Box, VStack, Text, Separator, Flex } from '@chakra-ui/react';
 import { useState } from 'react';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { ruleToSentence, destinationsToSentence } from '@/utils/ruleSummarizer';
+import { ruleToSentence } from '@/utils/ruleSummarizer';
 import type { PropertyDefinition } from '@/types';
 import type { AddedDestination } from '@/types/destination';
 
@@ -21,13 +21,27 @@ interface AddedRule {
   trackVariable?: string;
 }
 
+interface RuleGroup {
+  id: string;
+  type: 'group';
+  matchType: MatchType;
+  rules: AddedRule[];
+  collapsed?: boolean;
+  name?: string;
+}
+
+// Type guard to check if an item is a RuleGroup
+function isRuleGroup(item: AddedRule | RuleGroup): item is RuleGroup {
+  return 'type' in item && item.type === 'group';
+}
+
 type MatchType = 'all' | 'any';
 type TimePeriod = 'last7days' | 'last30days' | 'last90days' | 'lastYear' | 'allTime' | 'customRange';
 
 interface SectionConfig {
   id: string;
   title: string;
-  rules: AddedRule[];
+  items: (AddedRule | RuleGroup)[];
   matchType: MatchType;
   timePeriod: TimePeriod;
   isCollapsed: boolean;
@@ -44,148 +58,195 @@ export const AudienceSummary = ({
   syncDestinations,
   experimentMode,
 }: AudienceSummaryProps) => {
-  // Filter to only sections with rules (excluding sync which is handled separately)
-  const activeSections = sections.filter(s => s.id !== 'sync' && s.rules.length > 0);
-
-  // Collapsible state for each section
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  // Collapse state: start with all sections collapsed except 'entry'
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    new Set(['goals', 'exit', 'sync'])
+  );
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId);
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
       } else {
-        newSet.add(sectionId);
+        next.add(sectionId);
       }
-      return newSet;
+      return next;
     });
   };
 
+  // Helper function to format individual destination lines
+  const formatDestinationLine = (dest: AddedDestination): string => {
+    const platformName = dest.platformType
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    const audienceName = dest.targetAudienceName || 'audience';
+    const base = `${platformName} (${dest.accountName}) as "${audienceName}"`;
+
+    if (experimentMode && dest.trafficPercentage !== undefined) {
+      return `${base} - ${dest.trafficPercentage}%`;
+    }
+
+    return base;
+  };
+
+  // Filter to only sections with items (excluding sync which is handled separately)
+  const activeSections = sections.filter(s => s.id !== 'sync' && s.items.length > 0);
+
+  const timePeriodLabels: Record<TimePeriod, string> = {
+    last7days: 'in last 7 days',
+    last30days: 'in last 30 days',
+    last90days: 'in last 90 days',
+    lastYear: 'in last year',
+    allTime: 'all time',
+    customRange: 'in custom range',
+  };
+
   return (
-    <Box
-      width="320px"
-      height="fit-content"
-      bg="white"
-      borderRadius="lg"
-      border="1px solid"
-      borderColor="gray.200"
-      flexShrink={0}
-      display="flex"
-      flexDirection="column"
-    >
-      {/* Content */}
-      <Box p={4}>
-        <VStack align="stretch" gap={6}>
-          {/* Entry/Goals/Exit sections */}
-          {activeSections.map((section) => {
-            const isExpanded = expandedSections.has(section.id);
-            const matchTypeLabel = section.matchType === 'all' ? 'all of' : 'any of';
-            const timePeriodLabels: Record<TimePeriod, string> = {
-              last7days: 'in the last 7 days',
-              last30days: 'in the last 30 days',
-              last90days: 'in the last 90 days',
-              lastYear: 'in the last year',
-              allTime: 'all time',
-              customRange: 'in custom range',
-            };
-            const timeLabel = timePeriodLabels[section.timePeriod];
+    <Box width="320px" flexShrink={0}>
+      <VStack align="stretch" gap={6}>
+        {/* Entry/Goals/Exit sections */}
+        {activeSections.map((section) => {
+          const matchTypeLabel = section.matchType === 'all'
+            ? 'if all of the following are true'
+            : 'if any of the following are true';
+          const timeLabel = timePeriodLabels[section.timePeriod];
+          const isCollapsed = collapsedSections.has(section.id);
 
-            return (
-              <Box key={section.id}>
-                {/* Combined header - clickable to expand/collapse */}
-                <Flex
-                  align="center"
-                  gap={1}
-                  cursor="pointer"
-                  _hover={{ bg: 'gray.50' }}
-                  p={2}
-                  borderRadius="md"
-                  onClick={() => toggleSection(section.id)}
-                  mb={isExpanded ? 2 : 0}
-                >
-                  {isExpanded ? (
-                    <ExpandMoreIcon fontSize="small" style={{ color: '#718096' }} />
-                  ) : (
-                    <ChevronRightIcon fontSize="small" style={{ color: '#718096' }} />
-                  )}
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" flex="1">
-                    {section.title} {matchTypeLabel} the following {timeLabel}
-                  </Text>
-                  <Badge fontSize="xs" colorScheme="purple">
-                    {section.rules.length}
-                  </Badge>
-                </Flex>
-
-                {/* Rule sentences - only shown when expanded */}
-                {isExpanded && (
-                  <VStack align="stretch" gap={1} pl={6}>
-                    {section.rules.map((rule) => (
-                      <Flex key={rule.id} align="flex-start" gap={2}>
-                        <Text fontSize="xs" color="gray.400" mt={0.5}>•</Text>
-                        <Text
-                          fontSize="sm"
-                          color={rule.disabled ? 'gray.400' : 'gray.700'}
-                          textDecoration={rule.disabled ? 'line-through' : 'none'}
-                        >
-                          {ruleToSentence(rule)}
-                        </Text>
-                      </Flex>
-                    ))}
-                  </VStack>
-                )}
-              </Box>
-            );
-          })}
-
-          {/* Sync and activation section */}
-          {syncDestinations.length > 0 && (
-            <Box>
-              {/* Combined header - clickable to expand/collapse */}
+          return (
+            <Box key={section.id}>
+              {/* Collapsible Section Header */}
               <Flex
                 align="center"
-                gap={1}
+                gap={2}
                 cursor="pointer"
+                onClick={() => toggleSection(section.id)}
                 _hover={{ bg: 'gray.50' }}
-                p={2}
                 borderRadius="md"
-                onClick={() => toggleSection('sync')}
-                mb={expandedSections.has('sync') ? 2 : 0}
+                px={2}
+                py={1}
+                ml={-2}
+                mb={isCollapsed ? 0 : 1}
               >
-                {expandedSections.has('sync') ? (
-                  <ExpandMoreIcon fontSize="small" style={{ color: '#718096' }} />
-                ) : (
+                {isCollapsed ? (
                   <ChevronRightIcon fontSize="small" style={{ color: '#718096' }} />
+                ) : (
+                  <ExpandMoreIcon fontSize="small" style={{ color: '#718096' }} />
                 )}
-                <Text fontSize="sm" fontWeight="medium" color="gray.700" flex="1">
-                  Sync and activation
+                <Text fontSize="md" fontWeight="medium" color="gray.800">
+                  {section.title}
                 </Text>
-                <Badge fontSize="xs" colorScheme="purple">
-                  {syncDestinations.length}
-                </Badge>
               </Flex>
 
-              {/* Destination summary - only shown when expanded */}
-              {expandedSections.has('sync') && (
-                <Box pl={6}>
-                  <Text fontSize="sm" color="gray.700">
-                    {destinationsToSentence(syncDestinations, experimentMode)}
+              {/* Section content - only show when not collapsed */}
+              {!isCollapsed && (
+                <>
+                  {/* Match type */}
+                  <Text fontSize="xs" color="gray.500" mb={3}>
+                    {matchTypeLabel}
                   </Text>
-                </Box>
+
+                  {/* Rules in bordered container */}
+                  <Box
+                    border="1px solid"
+                    borderColor="gray.200"
+                    borderRadius="lg"
+                    overflow="hidden"
+                    mb={3}
+                  >
+                    <VStack align="stretch" gap={0}>
+                      {section.items
+                        .filter(item => !isRuleGroup(item))
+                        .map((rule, index, array) => (
+                        <Box key={rule.id}>
+                          <Text
+                            fontSize="sm"
+                            color={rule.disabled ? 'gray.400' : 'gray.700'}
+                            textDecoration={rule.disabled ? 'line-through' : 'none'}
+                            py={2}
+                            px={3}
+                          >
+                            {ruleToSentence(rule)}
+                          </Text>
+                          {index < array.length - 1 && (
+                            <Separator />
+                          )}
+                        </Box>
+                      ))}
+                    </VStack>
+                  </Box>
+
+                  {/* Time period - moved to bottom */}
+                  <Text fontSize="xs" color="gray.500">
+                    {timeLabel}
+                  </Text>
+                </>
               )}
             </Box>
-          )}
+          );
+        })}
 
-          {/* Empty state */}
-          {activeSections.length === 0 && syncDestinations.length === 0 && (
-            <Box py={8}>
-              <Text fontSize="sm" color="gray.500" textAlign="center">
-                No rules defined yet
+        {/* Sync and activation section */}
+        {syncDestinations.length > 0 && (
+          <Box>
+            {/* Collapsible Section Header */}
+            <Flex
+              align="center"
+              gap={2}
+              cursor="pointer"
+              onClick={() => toggleSection('sync')}
+              _hover={{ bg: 'gray.50' }}
+              borderRadius="md"
+              px={2}
+              py={1}
+              ml={-2}
+              mb={collapsedSections.has('sync') ? 0 : 3}
+            >
+              {collapsedSections.has('sync') ? (
+                <ChevronRightIcon fontSize="small" style={{ color: '#718096' }} />
+              ) : (
+                <ExpandMoreIcon fontSize="small" style={{ color: '#718096' }} />
+              )}
+              <Text fontSize="md" fontWeight="medium" color="gray.800">
+                Sync and activation
               </Text>
-            </Box>
-          )}
-        </VStack>
-      </Box>
+            </Flex>
+
+            {/* Destination list - show as individual lines */}
+            {!collapsedSections.has('sync') && (
+              <Box
+                border="1px solid"
+                borderColor="gray.200"
+                borderRadius="lg"
+                overflow="hidden"
+              >
+                <VStack align="stretch" gap={0}>
+                  {syncDestinations.map((dest, index, array) => (
+                    <Box key={dest.id}>
+                      <Text fontSize="sm" color="gray.700" py={2} px={3}>
+                        {formatDestinationLine(dest)}
+                      </Text>
+                      {index < array.length - 1 && (
+                        <Separator />
+                      )}
+                    </Box>
+                  ))}
+                </VStack>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Empty state */}
+        {activeSections.length === 0 && syncDestinations.length === 0 && (
+          <Box py={8}>
+            <Text fontSize="sm" color="gray.500" textAlign="center">
+              No rules defined yet
+            </Text>
+          </Box>
+        )}
+      </VStack>
     </Box>
   );
 };

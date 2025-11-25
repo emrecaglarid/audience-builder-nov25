@@ -3,9 +3,15 @@ import { Menu } from '@chakra-ui/react';
 import { useState, useMemo } from 'react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Customer } from '@/types';
+import { AddedDestination } from '@/types/destination';
 import { KPICard } from './KPICard';
 import { GoalCard } from './GoalCard';
 import { AudienceChart } from './AudienceChart';
+import { SyncActivationSection } from './SyncActivationSection';
+import { SupermetricsIntegration } from './SupermetricsIntegration';
+import { HistoricalDataBanner } from './HistoricalDataBanner';
+import { LoadingProgressBanner } from './LoadingProgressBanner';
+import { SuccessBanner } from './SuccessBanner';
 import {
   generateTimeSeriesData,
   getDateRangeForPeriod,
@@ -17,6 +23,15 @@ interface DashboardProps {
   matchingProfiles: number;
   sections?: SectionConfig[];
   customers?: Customer[];
+  syncDestinations?: AddedDestination[];
+  experimentMode?: boolean;
+  hasHistoricalData?: boolean;
+  isLoadingData?: boolean;
+  loadingProgress?: number;
+  showSuccessBanner?: boolean;
+  onLoadHistoricalData?: () => void;
+  onCancelLoading?: () => void;
+  onDismissSuccess?: () => void;
 }
 
 type DateRangePeriod = 'last7days' | 'last30days' | 'last90days' | 'custom';
@@ -28,16 +43,43 @@ const DATE_RANGE_LABELS: Record<DateRangePeriod, string> = {
   custom: 'Custom range',
 };
 
-export const Dashboard = ({ sections = [], customers = [] }: DashboardProps) => {
+export const Dashboard = ({
+  sections = [],
+  customers = [],
+  syncDestinations = [],
+  experimentMode = false,
+  hasHistoricalData = false,
+  isLoadingData = false,
+  loadingProgress = 0,
+  showSuccessBanner = false,
+  onLoadHistoricalData,
+  onCancelLoading,
+  onDismissSuccess,
+}: DashboardProps) => {
   const [dateRange, setDateRange] = useState<DateRangePeriod>('last30days');
 
-  // Generate time-series data
+  // Generate time-series data (only when historical data is loaded)
   const timeSeriesData = useMemo(() => {
+    if (!hasHistoricalData) {
+      // Return empty data structure when no historical data
+      return {
+        daily: [],
+        summary: {
+          currentActive: 0,
+          totalEntered: 0,
+          totalExited: 0,
+          netGrowth: 0,
+          netGrowthPercent: 0,
+          goals: {},
+        },
+      };
+    }
+
     const currentRange = getDateRangeForPeriod(dateRange);
     const previousRange = getPreviousPeriodRange(currentRange);
 
     return generateTimeSeriesData(sections, customers, currentRange, previousRange);
-  }, [sections, customers, dateRange]);
+  }, [sections, customers, dateRange, hasHistoricalData]);
 
   const { daily, summary } = timeSeriesData;
 
@@ -61,15 +103,23 @@ export const Dashboard = ({ sections = [], customers = [] }: DashboardProps) => 
       height="calc(100vh - 60px)"
       bg="#fbfbfb"
       overflowY="auto"
-      pt={2}
-      px={6}
-      pb={6}
     >
-      <VStack align="stretch" gap={6}>
+      <VStack align="stretch" gap={6} pb={15}>
+        {/* Banners */}
+        {!hasHistoricalData && !isLoadingData && !showSuccessBanner && onLoadHistoricalData && (
+          <HistoricalDataBanner onLoadClick={onLoadHistoricalData} />
+        )}
+        {isLoadingData && onCancelLoading && (
+          <LoadingProgressBanner progress={loadingProgress} onCancel={onCancelLoading} />
+        )}
+        {showSuccessBanner && onDismissSuccess && (
+          <SuccessBanner onDismiss={onDismissSuccess} />
+        )}
+
         {/* Date Range Selector */}
         <Flex justify="space-between" align="center">
           <Text fontSize="lg" fontWeight="semibold" color="gray.700">
-            Audience Performance
+            Audience performance
           </Text>
 
           <Menu.Root positioning={{ placement: 'bottom-end', strategy: 'fixed' }}>
@@ -126,17 +176,19 @@ export const Dashboard = ({ sections = [], customers = [] }: DashboardProps) => 
         </Flex>
 
         {/* Main Chart */}
-        <Box
-          bg="white"
-          borderRadius="lg"
-          border="1px solid"
-          borderColor="gray.200"
-          p={6}
-        >
+        <Box>
           <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={4}>
             Audience Flow Over Time
           </Text>
-          <AudienceChart data={daily} goalNames={goalNames} />
+          <Box
+            bg="white"
+            borderRadius="lg"
+            border="1px solid"
+            borderColor="gray.200"
+            p={6}
+          >
+            <AudienceChart data={daily} goalNames={goalNames} />
+          </Box>
         </Box>
 
         {/* Goal Cards */}
@@ -183,6 +235,25 @@ export const Dashboard = ({ sections = [], customers = [] }: DashboardProps) => 
                 Add goals to your audience to track performance
               </Text>
             </VStack>
+          </Box>
+        )}
+
+        {/* Sync & Activation Section */}
+        {syncDestinations.length > 0 && (
+          <SyncActivationSection
+            destinations={syncDestinations}
+            experimentMode={experimentMode}
+            currentAudienceSize={summary.currentActive}
+          />
+        )}
+
+        {/* Supermetrics Integration */}
+        {syncDestinations.length > 0 && (
+          <Box>
+            <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={4}>
+              Track ROI in Supermetrics
+            </Text>
+            <SupermetricsIntegration destinations={syncDestinations} />
           </Box>
         )}
       </VStack>

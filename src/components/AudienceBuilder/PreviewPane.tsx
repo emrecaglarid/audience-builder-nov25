@@ -1,4 +1,4 @@
-import { Box, Flex, Text, Button } from '@chakra-ui/react';
+import { Box, Flex, Text, Button, Spinner } from '@chakra-ui/react';
 import { Menu } from '@chakra-ui/react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -11,6 +11,7 @@ interface PreviewPaneProps {
   onTimePeriodChange: (period: PreviewTimePeriod) => void;
   hasGoals?: boolean;
   hasExitConditions?: boolean;
+  isCalculating?: boolean;
 }
 
 const TIME_PERIOD_LABELS: Record<PreviewTimePeriod, string> = {
@@ -28,6 +29,7 @@ export const PreviewPane = ({
   onTimePeriodChange,
   hasGoals = false,
   hasExitConditions = false,
+  isCalculating = false,
 }: PreviewPaneProps) => {
   // Format large numbers (e.g., 1200, 1.2K, 1.2M)
   const formatCount = (num: number): string => {
@@ -105,9 +107,20 @@ export const PreviewPane = ({
           <Text fontSize="sm" color="gray.600">
             Matching profiles
           </Text>
-          <Text fontSize="3xl" fontWeight="bold" color="gray.800">
-            {formatCount(matchingProfiles)}
-          </Text>
+          <Flex align="center" gap={2}>
+            <Text
+              fontSize="3xl"
+              fontWeight="bold"
+              color="gray.800"
+              opacity={isCalculating ? 0.5 : 1}
+              transition="opacity 0.2s"
+            >
+              {formatCount(matchingProfiles)}
+            </Text>
+            {isCalculating && (
+              <Spinner size="sm" color="purple.500" />
+            )}
+          </Flex>
         </Flex>
 
         {/* Reached goals - only show if goals section has rules */}

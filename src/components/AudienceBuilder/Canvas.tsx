@@ -2,32 +2,17 @@ import { Box, Text, VStack, Flex } from '@chakra-ui/react';
 import AddIcon from '@mui/icons-material/Add';
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { CriteriaSection, MatchType, TimePeriod } from './CriteriaSection';
+import { CriteriaSection, MatchType, TimePeriod, type AddedRule, type RuleGroup } from './CriteriaSection';
 import { SyncSection } from './SyncSection';
 import type { PropertyDefinition, FactDefinition, EngagementDefinition } from '../../types/schema';
 import type { PropertyMatch } from './PropertyDropdown';
 import type { AISuggestion } from './aiSuggestions';
 import type { AddedDestination, Destination } from '../../types/destination';
 
-interface AddedRule {
-  id: string;
-  propertyId: string;
-  propertyName: string;
-  parentName: string;
-  properties: PropertyDefinition[];
-  operator?: string;
-  value?: string | number | boolean;
-  value2?: string | number;
-  excluded?: boolean;
-  disabled?: boolean;
-  comment?: string;
-  trackVariable?: string;
-}
-
 interface SectionConfig {
   id: string;
   title: string;
-  rules: AddedRule[];
+  items: (AddedRule | RuleGroup)[];
   matchType: MatchType;
   timePeriod: TimePeriod;
   isCollapsed: boolean;
@@ -43,6 +28,8 @@ interface CanvasProps {
   syncDestinations: AddedDestination[];
   experimentMode: boolean;
   isDestinationModalOpen: boolean;
+  sectionSelectionMode: Record<string, boolean>;
+  sectionSelectedRules: Record<string, Set<string>>;
   onSectionMatchTypeChange: (sectionId: string, matchType: MatchType) => void;
   onSectionTimePeriodChange: (sectionId: string, timePeriod: TimePeriod) => void;
   onSectionToggleCollapse: (sectionId: string) => void;
@@ -57,6 +44,13 @@ interface CanvasProps {
   onSetActiveSection: (sectionId: string) => void;
   onAddProperty: (sectionId: string, match: PropertyMatch) => void;
   onAddAISuggestions: (sectionId: string, suggestions: AISuggestion[]) => void;
+  onEnterSelectionMode: (sectionId: string) => void;
+  onExitSelectionMode: (sectionId: string) => void;
+  onToggleRuleSelection: (sectionId: string, ruleId: string) => void;
+  onGroupSelected: (sectionId: string) => void;
+  onUngroupGroup: (sectionId: string, groupId: string) => void;
+  onGroupMatchTypeChange: (sectionId: string, groupId: string, matchType: MatchType) => void;
+  onRenameGroup: (sectionId: string, groupId: string, name: string) => void;
   onOpenDestinationModal: () => void;
   onCloseDestinationModal: () => void;
   onSelectDestination: (destination: Destination) => void;
@@ -135,6 +129,8 @@ export const Canvas = ({
   syncDestinations,
   experimentMode,
   isDestinationModalOpen,
+  sectionSelectionMode,
+  sectionSelectedRules,
   onSectionMatchTypeChange,
   onSectionTimePeriodChange,
   onSectionToggleCollapse,
@@ -149,6 +145,13 @@ export const Canvas = ({
   onSetActiveSection,
   onAddProperty,
   onAddAISuggestions,
+  onEnterSelectionMode,
+  onExitSelectionMode,
+  onToggleRuleSelection,
+  onGroupSelected,
+  onUngroupGroup,
+  onGroupMatchTypeChange,
+  onRenameGroup,
   onOpenDestinationModal,
   onCloseDestinationModal,
   onSelectDestination,
@@ -160,8 +163,8 @@ export const Canvas = ({
   onExperimentToggle,
   onSplitEqually,
 }: CanvasProps) => {
-  // Check if any section has rules (used to show/hide ghost sections)
-  const hasAnyRules = sections.some(section => section.rules.length > 0);
+  // Check if any section has items (used to show/hide ghost sections)
+  const hasAnyRules = sections.some(section => section.items.length > 0);
 
   return (
     <Box
@@ -214,10 +217,10 @@ export const Canvas = ({
             return null;
           }
 
-          // If section has no rules and hasn't been activated, show ghost state
-          // But only show ghost sections after first rule is added anywhere
-          if (section.rules.length === 0 && !activatedSections.has(section.id)) {
-            // Don't show ghost sections until there's at least one rule
+          // If section has no items and hasn't been activated, show ghost state
+          // But only show ghost sections after first item is added anywhere
+          if (section.items.length === 0 && !activatedSections.has(section.id)) {
+            // Don't show ghost sections until there's at least one item
             if (!hasAnyRules) {
               return null;
             }
@@ -237,12 +240,14 @@ export const Canvas = ({
               key={section.id}
               sectionId={section.id}
               title={section.title}
-              rules={section.rules}
+              items={section.items}
               matchType={section.matchType}
               timePeriod={section.timePeriod}
               isCollapsed={section.isCollapsed}
               shouldFocusInput={focusSectionId === section.id}
               isActive={activeSectionId === section.id}
+              isInSelectionMode={sectionSelectionMode[section.id] || false}
+              selectedRuleIds={sectionSelectedRules[section.id] || new Set()}
               facts={facts}
               engagements={engagements}
               onMatchTypeChange={(matchType) => onSectionMatchTypeChange(section.id, matchType)}
@@ -258,6 +263,13 @@ export const Canvas = ({
               onRuleTrackVariableChange={(ruleId, variable) => onRuleTrackVariableChange(section.id, ruleId, variable)}
               onAddProperty={(match) => onAddProperty(section.id, match)}
               onAddAISuggestions={(suggestions) => onAddAISuggestions(section.id, suggestions)}
+              onEnterSelectionMode={() => onEnterSelectionMode(section.id)}
+              onExitSelectionMode={() => onExitSelectionMode(section.id)}
+              onToggleRuleSelection={(ruleId) => onToggleRuleSelection(section.id, ruleId)}
+              onGroupSelected={() => onGroupSelected(section.id)}
+              onUngroupGroup={(groupId) => onUngroupGroup(section.id, groupId)}
+              onGroupMatchTypeChange={(groupId, matchType) => onGroupMatchTypeChange(section.id, groupId, matchType)}
+              onRenameGroup={(groupId, name) => onRenameGroup(section.id, groupId, name)}
             />
           );
         })}

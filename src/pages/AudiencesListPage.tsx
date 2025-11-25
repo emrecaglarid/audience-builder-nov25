@@ -1,5 +1,5 @@
 import { Box, Flex, Text, Button } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -7,6 +7,7 @@ import { getAudiences, initializeWithMockData, type SavedAudience } from '../ser
 
 export function AudiencesListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [audiences, setAudiences] = useState<SavedAudience[]>([]);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export function AudiencesListPage() {
         // Try to load existing audiences anyway
         setAudiences(getAudiences());
       });
-  }, []);
+  }, [location.pathname]); // Re-run when pathname changes (e.g., back navigation)
 
   const handleRowClick = (id: string) => {
     navigate(`/audiences/${id}`);

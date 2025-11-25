@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { Box, Flex } from '@chakra-ui/react';
+import { Box, Flex, Text } from '@chakra-ui/react';
 import { useState, useEffect, useMemo } from 'react';
 import { getAudience, saveAudience } from '../../services/audienceStorage';
 import {
@@ -22,7 +22,7 @@ import LibraryPane from './LibraryPane';
 import { Canvas } from './Canvas';
 import PreviewPane, { PreviewTimePeriod } from './PreviewPane';
 import { ToolbarPane } from './Toolbar';
-import { MatchType, TimePeriod } from './CriteriaSection';
+import { MatchType, TimePeriod, type AddedRule, type RuleGroup, isRuleGroup } from './CriteriaSection';
 import type { PropertyMatch } from './PropertyDropdown';
 import type { AISuggestion } from './aiSuggestions';
 import { calculateAudienceSize } from '@/utils/queryEngine';
@@ -30,26 +30,12 @@ import { sectionsToConditionGroup } from '@/utils/audienceQueryBuilder';
 import type { AddedDestination, Destination } from '../../types/destination';
 import { AudienceSummary } from './ViewMode/AudienceSummary';
 import { Dashboard } from './ViewMode/Dashboard';
-
-interface AddedRule {
-  id: string;
-  propertyId: string;
-  propertyName: string;
-  parentName: string;
-  properties: PropertyDefinition[];
-  operator?: string;
-  value?: string | number | boolean;
-  value2?: string | number;
-  excluded?: boolean;
-  disabled?: boolean;
-  comment?: string;
-  trackVariable?: string;
-}
+import { HistoricalDataModal } from './ViewMode/HistoricalDataModal';
 
 interface SectionConfig {
   id: string;
   title: string;
-  rules: AddedRule[];
+  items: (AddedRule | RuleGroup)[];
   matchType: MatchType;
   timePeriod: TimePeriod;
   isCollapsed: boolean;
@@ -79,9 +65,19 @@ function AudienceBuilderPage() {
   const [experimentMode, setExperimentMode] = useState(false);
   const [isDestinationModalOpen, setIsDestinationModalOpen] = useState(false);
 
+  // Historical data state
+  const [hasHistoricalData, setHasHistoricalData] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [isHistoricalDataModalOpen, setIsHistoricalDataModalOpen] = useState(false);
+
   // Drag and drop state
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeDragItem, setActiveDragItem] = useState<PropertyReference | AddedRule | null>(null);
+  const [activeDragItem, setActiveDragItem] = useState<PropertyReference | AddedRule | RuleGroup | null>(null);
+
+  // Preview calculation state
+  const [isCalculating, setIsCalculating] = useState(false);
 
   // Set up drag sensors (mouse only for now)
   const sensors = useSensors(
@@ -103,6 +99,19 @@ function AudienceBuilderPage() {
         setSections(saved.sections as SectionConfig[]);
         setHasUnsavedChanges(false);
 
+        // Load sync destinations and experiment mode
+        if (saved.syncDestinations) {
+          setSyncDestinations(saved.syncDestinations);
+        }
+        if (saved.experimentMode !== undefined) {
+          setExperimentMode(saved.experimentMode);
+        }
+
+        // Load historical data state
+        if (saved.hasHistoricalData !== undefined) {
+          setHasHistoricalData(saved.hasHistoricalData);
+        }
+
         // Auto-switch to view mode if published
         if (saved.status === 'published') {
           setViewMode('view');
@@ -123,7 +132,7 @@ function AudienceBuilderPage() {
     {
       id: 'entry',
       title: 'Enter audience if',
-      rules: [],
+      items: [],
       matchType: 'all',
       timePeriod: 'last30days',
       isCollapsed: false,
@@ -131,7 +140,7 @@ function AudienceBuilderPage() {
     {
       id: 'goals',
       title: 'Goals',
-      rules: [],
+      items: [],
       matchType: 'all',
       timePeriod: 'last30days',
       isCollapsed: false,
@@ -139,7 +148,7 @@ function AudienceBuilderPage() {
     {
       id: 'sync',
       title: 'Sync and activation',
-      rules: [],
+      items: [],
       matchType: 'all',
       timePeriod: 'last30days',
       isCollapsed: false,
@@ -147,12 +156,44 @@ function AudienceBuilderPage() {
     {
       id: 'exit',
       title: 'Exit audience if',
-      rules: [],
+      items: [],
       matchType: 'all',
       timePeriod: 'last30days',
       isCollapsed: false,
     },
   ]);
+
+  // Auto-cleanup invalid groups (groups with < 2 rules)
+  useEffect(() => {
+    setSections(prevSections => {
+      let hasChanges = false;
+      const newSections = prevSections.map(section => {
+        const newItems: (AddedRule | RuleGroup)[] = [];
+
+        for (const item of section.items) {
+          if (isRuleGroup(item)) {
+            // If group has < 2 rules, ungroup it
+            if (item.rules.length < 2) {
+              hasChanges = true;
+              newItems.push(...item.rules); // Add rules directly
+            } else {
+              newItems.push(item); // Keep the group
+            }
+          } else {
+            newItems.push(item);
+          }
+        }
+
+        return hasChanges ? { ...section, items: newItems } : section;
+      });
+
+      return hasChanges ? newSections : prevSections;
+    });
+  }, [sections]); // Run whenever sections change
+
+  // Selection state for grouping
+  const [sectionSelectionMode, setSectionSelectionMode] = useState<Record<string, boolean>>({});
+  const [sectionSelectedRules, setSectionSelectedRules] = useState<Record<string, Set<string>>>({});
 
   // Handle clicking a property directly
   const handlePropertyClick = (propertyRef: PropertyReference) => {
@@ -175,7 +216,7 @@ function AudienceBuilderPage() {
     // Add to active section
     setSections(prev => prev.map(section =>
       section.id === activeSectionId
-        ? { ...section, rules: [...section.rules, newRule] }
+        ? { ...section, items: [...section.items, newRule] }
         : section
     ));
 
@@ -219,7 +260,7 @@ function AudienceBuilderPage() {
   const handleRuleDelete = (sectionId: string, ruleId: string) => {
     setSections(prev => prev.map(section =>
       section.id === sectionId
-        ? { ...section, rules: section.rules.filter(r => r.id !== ruleId) }
+        ? { ...section, items: section.items.filter(r => !isRuleGroup(r) && r.id !== ruleId) }
         : section
     ));
     setHasUnsavedChanges(true);
@@ -239,10 +280,10 @@ function AudienceBuilderPage() {
       section.id === sectionId
         ? {
             ...section,
-            rules: section.rules.map(rule =>
-              rule.id === ruleId
-                ? { ...rule, operator: data.operator, value: data.value }
-                : rule
+            items: section.items.map(item =>
+              !isRuleGroup(item) && item.id === ruleId
+                ? { ...item, operator: data.operator, value: data.value }
+                : item
             )
           }
         : section
@@ -255,10 +296,10 @@ function AudienceBuilderPage() {
       section.id === sectionId
         ? {
             ...section,
-            rules: section.rules.map(rule =>
-              rule.id === ruleId
-                ? { ...rule, excluded: !rule.excluded }
-                : rule
+            items: section.items.map(item =>
+              !isRuleGroup(item) && item.id === ruleId
+                ? { ...item, excluded: !item.excluded }
+                : item
             )
           }
         : section
@@ -270,10 +311,10 @@ function AudienceBuilderPage() {
       section.id === sectionId
         ? {
             ...section,
-            rules: section.rules.map(rule =>
-              rule.id === ruleId
-                ? { ...rule, disabled: !rule.disabled }
-                : rule
+            items: section.items.map(item =>
+              !isRuleGroup(item) && item.id === ruleId
+                ? { ...item, disabled: !item.disabled }
+                : item
             )
           }
         : section
@@ -285,10 +326,10 @@ function AudienceBuilderPage() {
       section.id === sectionId
         ? {
             ...section,
-            rules: section.rules.map(rule =>
-              rule.id === ruleId
-                ? { ...rule, comment: comment || undefined }
-                : rule
+            items: section.items.map(item =>
+              !isRuleGroup(item) && item.id === ruleId
+                ? { ...item, comment: comment || undefined }
+                : item
             )
           }
         : section
@@ -300,10 +341,10 @@ function AudienceBuilderPage() {
       section.id === sectionId
         ? {
             ...section,
-            rules: section.rules.map(rule =>
-              rule.id === ruleId
-                ? { ...rule, trackVariable: variable || undefined }
-                : rule
+            items: section.items.map(item =>
+              !isRuleGroup(item) && item.id === ruleId
+                ? { ...item, trackVariable: variable || undefined }
+                : item
             )
           }
         : section
@@ -330,7 +371,7 @@ function AudienceBuilderPage() {
     // Add to the specified section
     setSections(prev => prev.map(section =>
       section.id === sectionId
-        ? { ...section, rules: [...section.rules, newRule] }
+        ? { ...section, items: [...section.items, newRule] }
         : section
     ));
 
@@ -365,7 +406,7 @@ function AudienceBuilderPage() {
     // Add all rules to the specified section
     setSections(prev => prev.map(section =>
       section.id === sectionId
-        ? { ...section, rules: [...section.rules, ...newRules] }
+        ? { ...section, items: [...section.items, ...newRules] }
         : section
     ));
 
@@ -387,18 +428,132 @@ function AudienceBuilderPage() {
   };
 
   const handleSetActiveSection = (sectionId: string) => {
-    // Auto-collapse current active section if it has no rules
-    const currentActiveSection = sections.find(s => s.id === activeSectionId);
-    if (currentActiveSection && currentActiveSection.rules.length === 0 && currentActiveSection.id !== 'entry') {
-      // Remove from activated sections (make it ghost again)
-      setActivatedSections(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(activeSectionId);
-        return newSet;
-      });
-    }
-
     setActiveSectionId(sectionId);
+  };
+
+  // Selection handlers for grouping
+  const handleEnterSelectionMode = (sectionId: string) => {
+    setSectionSelectionMode(prev => ({ ...prev, [sectionId]: true }));
+    setSectionSelectedRules(prev => ({ ...prev, [sectionId]: new Set() }));
+  };
+
+  const handleExitSelectionMode = (sectionId: string) => {
+    setSectionSelectionMode(prev => ({ ...prev, [sectionId]: false }));
+    setSectionSelectedRules(prev => ({ ...prev, [sectionId]: new Set() }));
+  };
+
+  const handleToggleRuleSelection = (sectionId: string, ruleId: string) => {
+    setSectionSelectedRules(prev => {
+      const sectionSet = new Set(prev[sectionId] || []);
+      if (sectionSet.has(ruleId)) {
+        sectionSet.delete(ruleId);
+      } else {
+        sectionSet.add(ruleId);
+      }
+      return { ...prev, [sectionId]: sectionSet };
+    });
+  };
+
+  const handleGroupSelected = (sectionId: string) => {
+    const selectedIds = sectionSelectedRules[sectionId];
+    if (!selectedIds || selectedIds.size < 2) return;
+
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+
+      // Extract selected rules (only AddedRule items, not groups)
+      const selectedRules = section.items.filter(
+        item => !isRuleGroup(item) && selectedIds.has(item.id)
+      ) as AddedRule[];
+
+      // Remove selected rules from items
+      const remainingItems = section.items.filter(
+        item => isRuleGroup(item) || !selectedIds.has(item.id)
+      );
+
+      // Count existing groups to name the new one
+      const existingGroupCount = section.items.filter(isRuleGroup).length;
+
+      // Create new group
+      const newGroup: RuleGroup = {
+        id: `group-${Date.now()}`,
+        type: 'group',
+        matchType: 'all',
+        rules: selectedRules,
+        name: `Group ${existingGroupCount + 1}`,
+      };
+
+      // Find index where first selected rule was
+      const insertIndex = section.items.findIndex(
+        item => !isRuleGroup(item) && selectedIds.has(item.id)
+      );
+
+      // Insert group at that position
+      const newItems = [...remainingItems];
+      newItems.splice(insertIndex >= 0 ? insertIndex : newItems.length, 0, newGroup);
+
+      return { ...section, items: newItems };
+    }));
+
+    // Exit selection mode
+    handleExitSelectionMode(sectionId);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleUngroupGroup = (sectionId: string, groupId: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+
+      const newItems: (AddedRule | RuleGroup)[] = [];
+      section.items.forEach(item => {
+        if (isRuleGroup(item) && item.id === groupId) {
+          // Replace group with its rules
+          newItems.push(...item.rules);
+        } else {
+          newItems.push(item);
+        }
+      });
+
+      return { ...section, items: newItems };
+    }));
+
+    setHasUnsavedChanges(true);
+  };
+
+  const handleGroupMatchTypeChange = (sectionId: string, groupId: string, matchType: MatchType) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+
+      return {
+        ...section,
+        items: section.items.map(item => {
+          if (isRuleGroup(item) && item.id === groupId) {
+            return { ...item, matchType };
+          }
+          return item;
+        }),
+      };
+    }));
+
+    setHasUnsavedChanges(true);
+  };
+
+  const handleRenameGroup = (sectionId: string, groupId: string, name: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+
+      return {
+        ...section,
+        items: section.items.map(item => {
+          if (isRuleGroup(item) && item.id === groupId) {
+            return { ...item, name: name || undefined };
+          }
+          return item;
+        }),
+      };
+    }));
+
+    setHasUnsavedChanges(true);
   };
 
   const handleSave = () => {
@@ -407,6 +562,9 @@ function AudienceBuilderPage() {
       name: audienceName,
       sections,
       status: 'draft',
+      syncDestinations,
+      experimentMode,
+      hasHistoricalData,
     });
     setAudienceId(saved.id);
     setAudienceStatus('draft');
@@ -415,15 +573,26 @@ function AudienceBuilderPage() {
   };
 
   const handlePublish = () => {
+    // Reset historical data on first publish (draft → published)
+    // Keep existing historical data if re-publishing (published → published with edits)
+    const isFirstPublish = audienceStatus !== 'published';
+
     const saved = saveAudience({
       id: audienceId,
       name: audienceName,
       sections,
       status: 'published',
+      syncDestinations,
+      experimentMode,
+      hasHistoricalData: isFirstPublish ? false : hasHistoricalData,
     });
     setAudienceId(saved.id);
     setAudienceStatus('published');
     setHasUnsavedChanges(false);
+    // Reset local state if first publish
+    if (isFirstPublish) {
+      setHasHistoricalData(false);
+    }
     // Switch to view mode after publish
     setViewMode('view');
   };
@@ -433,8 +602,86 @@ function AudienceBuilderPage() {
     setViewMode('edit');
   };
 
+  const handleUnpublish = () => {
+    // Unpublish audience: change to draft and reset historical data
+    const saved = saveAudience({
+      id: audienceId,
+      name: audienceName,
+      sections,
+      status: 'draft',
+      syncDestinations,
+      experimentMode,
+      hasHistoricalData: false,
+    });
+    setAudienceId(saved.id);
+    setAudienceStatus('draft');
+    setHasHistoricalData(false);
+    setHasUnsavedChanges(false);
+    // Switch back to edit mode
+    setViewMode('edit');
+  };
+
   const handleAnalyzeAudience = () => {
     setViewMode('view');
+  };
+
+  // Historical data handlers
+  const handleOpenHistoricalDataModal = () => {
+    setIsHistoricalDataModalOpen(true);
+  };
+
+  const handleLoadHistoricalData = async (startDate: Date, endDate: Date) => {
+    // Close modal
+    setIsHistoricalDataModalOpen(false);
+
+    // Start loading
+    setIsLoadingData(true);
+    setLoadingProgress(0);
+
+    // Simulate loading with progress updates
+    const duration = 10000 + Math.random() * 5000; // 10-15 seconds
+    const interval = 100; // Update every 100ms
+    const steps = duration / interval;
+    let currentStep = 0;
+
+    const progressInterval = setInterval(() => {
+      currentStep++;
+      const progress = Math.min((currentStep / steps) * 100, 100);
+      setLoadingProgress(progress);
+
+      if (progress >= 100) {
+        clearInterval(progressInterval);
+        // Complete loading
+        setIsLoadingData(false);
+        setHasHistoricalData(true);
+        setShowSuccessBanner(true);
+
+        // Auto-dismiss success banner after 5 seconds
+        setTimeout(() => setShowSuccessBanner(false), 5000);
+
+        // Save to storage
+        saveAudience({
+          id: audienceId,
+          name: audienceName,
+          sections,
+          status: audienceStatus,
+          syncDestinations,
+          experimentMode,
+          hasHistoricalData: true,
+          historicalDataLoadedAt: new Date().toISOString(),
+        });
+      }
+    }, interval);
+  };
+
+  const handleCancelLoading = () => {
+    // Cancel loading
+    setIsLoadingData(false);
+    setLoadingProgress(0);
+  };
+
+  const handleDismissSuccess = () => {
+    setShowSuccessBanner(false);
   };
 
   // Destination handlers
@@ -613,7 +860,7 @@ function AudienceBuilderPage() {
 
     // Store the dragged item data for the overlay
     if (active.data.current) {
-      setActiveDragItem(active.data.current as PropertyReference | AddedRule);
+      setActiveDragItem(active.data.current as PropertyReference | AddedRule | RuleGroup);
     }
   };
 
@@ -653,7 +900,7 @@ function AudienceBuilderPage() {
       setSections(prevSections =>
         prevSections.map(section =>
           section.id === sectionId
-            ? { ...section, rules: [...section.rules, newRule] }
+            ? { ...section, items: [...section.items, newRule] }
             : section
         )
       );
@@ -668,7 +915,7 @@ function AudienceBuilderPage() {
 
       // Find which section contains the rule we're hovering over
       const sectionWithRule = sections.find(section =>
-        section.rules.some(rule => rule.id === overRuleId)
+        section.items.some(item => !isRuleGroup(item) && item.id === overRuleId)
       );
 
       if (!sectionWithRule) return;
@@ -692,7 +939,7 @@ function AudienceBuilderPage() {
       setSections(prevSections =>
         prevSections.map(section =>
           section.id === sectionWithRule.id
-            ? { ...section, rules: [...section.rules, newRule] }
+            ? { ...section, items: [...section.items, newRule] }
             : section
         )
       );
@@ -711,7 +958,7 @@ function AudienceBuilderPage() {
       setSections(prevSections => {
         // Find the section containing the active rule
         const sectionWithRule = prevSections.find(section =>
-          section.rules.some(rule => rule.id === activeRuleId)
+          section.items.some(item => !isRuleGroup(item) && item.id === activeRuleId)
         );
 
         if (!sectionWithRule) return prevSections;
@@ -719,17 +966,109 @@ function AudienceBuilderPage() {
         return prevSections.map(section => {
           if (section.id !== sectionWithRule.id) return section;
 
-          const oldIndex = section.rules.findIndex(rule => rule.id === activeRuleId);
-          const newIndex = section.rules.findIndex(rule => rule.id === overRuleId);
+          const oldIndex = section.items.findIndex(item => !isRuleGroup(item) && item.id === activeRuleId);
+          const newIndex = section.items.findIndex(item => !isRuleGroup(item) && item.id === overRuleId);
 
           return {
             ...section,
-            rules: arrayMove(section.rules, oldIndex, newIndex),
+            items: arrayMove(section.items, oldIndex, newIndex),
           };
         });
       });
 
       console.log('Reordered rule:', activeRuleId, 'to position of:', overRuleId);
+    }
+
+    // Scenario 2b: Reordering groups within the same section
+    if (activeData?.dragType === 'group' && overData?.dragType === 'group') {
+      const activeGroupId = active.id as string;
+      const overGroupId = over.id as string;
+
+      if (activeGroupId === overGroupId) return;
+
+      // Find which section contains these groups
+      setSections(prevSections => {
+        // Find the section containing the active group
+        const sectionWithGroup = prevSections.find(section =>
+          section.items.some(item => isRuleGroup(item) && item.id === activeGroupId)
+        );
+
+        if (!sectionWithGroup) return prevSections;
+
+        return prevSections.map(section => {
+          if (section.id !== sectionWithGroup.id) return section;
+
+          const oldIndex = section.items.findIndex(item => isRuleGroup(item) && item.id === activeGroupId);
+          const newIndex = section.items.findIndex(item => isRuleGroup(item) && item.id === overGroupId);
+
+          return {
+            ...section,
+            items: arrayMove(section.items, oldIndex, newIndex),
+          };
+        });
+      });
+
+      console.log('Reordered group:', activeGroupId, 'to position of:', overGroupId);
+    }
+
+    // Scenario 2c: Dragging a rule over a group (reorder within section)
+    if (activeData?.dragType === 'rule' && overData?.dragType === 'group') {
+      const activeRuleId = active.id as string;
+      const overGroupId = over.id as string;
+
+      // Find which section contains these items
+      setSections(prevSections => {
+        // Find the section containing the active rule
+        const sectionWithRule = prevSections.find(section =>
+          section.items.some(item => !isRuleGroup(item) && item.id === activeRuleId)
+        );
+
+        if (!sectionWithRule) return prevSections;
+
+        return prevSections.map(section => {
+          if (section.id !== sectionWithRule.id) return section;
+
+          const oldIndex = section.items.findIndex(item => !isRuleGroup(item) && item.id === activeRuleId);
+          const newIndex = section.items.findIndex(item => isRuleGroup(item) && item.id === overGroupId);
+
+          return {
+            ...section,
+            items: arrayMove(section.items, oldIndex, newIndex),
+          };
+        });
+      });
+
+      console.log('Reordered rule:', activeRuleId, 'near group:', overGroupId);
+    }
+
+    // Scenario 2d: Dragging a group over a rule (reorder within section)
+    if (activeData?.dragType === 'group' && overData?.dragType === 'rule') {
+      const activeGroupId = active.id as string;
+      const overRuleId = over.id as string;
+
+      // Find which section contains these items
+      setSections(prevSections => {
+        // Find the section containing the active group
+        const sectionWithGroup = prevSections.find(section =>
+          section.items.some(item => isRuleGroup(item) && item.id === activeGroupId)
+        );
+
+        if (!sectionWithGroup) return prevSections;
+
+        return prevSections.map(section => {
+          if (section.id !== sectionWithGroup.id) return section;
+
+          const oldIndex = section.items.findIndex(item => isRuleGroup(item) && item.id === activeGroupId);
+          const newIndex = section.items.findIndex(item => !isRuleGroup(item) && item.id === overRuleId);
+
+          return {
+            ...section,
+            items: arrayMove(section.items, oldIndex, newIndex),
+          };
+        });
+      });
+
+      console.log('Reordered group:', activeGroupId, 'near rule:', overRuleId);
     }
 
     // Scenario 3: Moving a rule to a different section
@@ -743,9 +1082,9 @@ function AudienceBuilderPage() {
         let sourceSectionId: string | undefined;
 
         for (const section of prevSections) {
-          const rule = section.rules.find(r => r.id === ruleId);
-          if (rule) {
-            ruleToMove = rule;
+          const item = section.items.find(i => !isRuleGroup(i) && i.id === ruleId);
+          if (item && !isRuleGroup(item)) {
+            ruleToMove = item;
             sourceSectionId = section.id;
             break;
           }
@@ -760,12 +1099,12 @@ function AudienceBuilderPage() {
           if (section.id === sourceSectionId) {
             return {
               ...section,
-              rules: section.rules.filter(r => r.id !== ruleId),
+              items: section.items.filter(i => !((!isRuleGroup(i)) && i.id === ruleId)),
             };
           } else if (section.id === targetSectionId) {
             return {
               ...section,
-              rules: [...section.rules, ruleToMove],
+              items: [...section.items, ruleToMove],
             };
           }
           return section;
@@ -773,6 +1112,49 @@ function AudienceBuilderPage() {
       });
 
       console.log('Moved rule:', ruleId, 'to section:', targetSectionId);
+    }
+
+    // Scenario 3b: Moving a group to a different section
+    if (activeData?.dragType === 'group' && overData?.type === 'section') {
+      const groupId = active.id as string;
+      const targetSectionId = over.id as string;
+
+      setSections(prevSections => {
+        // Find the group and its current section
+        let groupToMove: RuleGroup | undefined;
+        let sourceSectionId: string | undefined;
+
+        for (const section of prevSections) {
+          const item = section.items.find(i => isRuleGroup(i) && i.id === groupId);
+          if (item && isRuleGroup(item)) {
+            groupToMove = item;
+            sourceSectionId = section.id;
+            break;
+          }
+        }
+
+        if (!groupToMove || !sourceSectionId || sourceSectionId === targetSectionId) {
+          return prevSections;
+        }
+
+        // Remove from source section and add to target section
+        return prevSections.map(section => {
+          if (section.id === sourceSectionId) {
+            return {
+              ...section,
+              items: section.items.filter(i => !(isRuleGroup(i) && i.id === groupId)),
+            };
+          } else if (section.id === targetSectionId) {
+            return {
+              ...section,
+              items: [...section.items, groupToMove],
+            };
+          }
+          return section;
+        });
+      });
+
+      console.log('Moved group:', groupId, 'to section:', targetSectionId);
     }
 
     // Scenario 4: Dragging a property from library to a ghost section (create section + add rule)
@@ -800,7 +1182,7 @@ function AudienceBuilderPage() {
       setSections(prevSections =>
         prevSections.map(section =>
           section.id === sectionId
-            ? { ...section, rules: [newRule] }
+            ? { ...section, items: [newRule] }
             : section
         )
       );
@@ -819,9 +1201,9 @@ function AudienceBuilderPage() {
         let sourceSectionId: string | undefined;
 
         for (const section of prevSections) {
-          const rule = section.rules.find(r => r.id === ruleId);
-          if (rule) {
-            ruleToMove = rule;
+          const item = section.items.find(i => !isRuleGroup(i) && i.id === ruleId);
+          if (item && !isRuleGroup(item)) {
+            ruleToMove = item;
             sourceSectionId = section.id;
             break;
           }
@@ -836,12 +1218,12 @@ function AudienceBuilderPage() {
           if (section.id === sourceSectionId) {
             return {
               ...section,
-              rules: section.rules.filter(r => r.id !== ruleId),
+              items: section.items.filter(i => !((!isRuleGroup(i)) && i.id === ruleId)),
             };
           } else if (section.id === targetSectionId) {
             return {
               ...section,
-              rules: [ruleToMove], // Ghost section starts with this rule
+              items: [ruleToMove], // Ghost section starts with this rule
             };
           }
           return section;
@@ -860,35 +1242,53 @@ function AudienceBuilderPage() {
     );
   }
 
-  // Calculate matching profiles using query engine
-  const matchingProfiles = useMemo(() => {
-    if (!schema) return 0;
+  // Calculate matching profiles using query engine with debounce
+  const [matchingProfiles, setMatchingProfiles] = useState(0);
 
-    try {
-      // Convert sections to query conditions
-      const conditions = sectionsToConditionGroup(sections, schema);
-
-      // Calculate using query engine
-      return calculateAudienceSize(customers, conditions);
-    } catch (error) {
-      console.error('Error calculating audience size:', error);
-      return 0; // Fallback to 0 on error
+  useEffect(() => {
+    if (!schema) {
+      setMatchingProfiles(0);
+      return;
     }
+
+    // Set calculating state immediately
+    setIsCalculating(true);
+
+    // Debounce calculation by 500ms
+    const timeoutId = setTimeout(() => {
+      try {
+        // Convert sections to query conditions
+        const conditions = sectionsToConditionGroup(sections, schema);
+
+        // Calculate using query engine
+        const count = calculateAudienceSize(customers, conditions);
+        setMatchingProfiles(count);
+      } catch (error) {
+        console.error('Error calculating audience size:', error);
+        setMatchingProfiles(0); // Fallback to 0 on error
+      } finally {
+        setIsCalculating(false);
+      }
+    }, 500);
+
+    // Cleanup: cancel pending calculation if dependencies change again
+    return () => clearTimeout(timeoutId);
   }, [sections, customers, schema]);
 
   const reachedGoals = 0; // TODO: Calculate based on goals section
 
   // Check if we have any COMPLETE rules (property + operator + value)
   const hasCompleteRule = sections.some(section =>
-    section.rules.some(rule => {
-      if (!rule.operator) return false;
+    section.items.some(item => {
+      if (isRuleGroup(item)) return false; // Skip groups for now
+      if (!item.operator) return false;
 
       // Some operators don't need values (isTrue, isFalse, time-based)
       const operatorsWithoutValue = ['isTrue', 'isFalse', 'last7days', 'last30days', 'last90days'];
-      if (operatorsWithoutValue.includes(rule.operator)) return true;
+      if (operatorsWithoutValue.includes(item.operator)) return true;
 
       // Other operators need a value
-      return rule.value !== undefined && rule.value !== '';
+      return item.value !== undefined && item.value !== '';
     })
   );
 
@@ -926,6 +1326,10 @@ function AudienceBuilderPage() {
           onAnalyze={handleAnalyzeAudience}
           onEdit={handleEdit}
           lastModified="Just now"
+          hasHistoricalData={hasHistoricalData}
+          isLoadingData={isLoadingData}
+          onLoadHistoricalData={handleOpenHistoricalDataModal}
+          onUnpublish={handleUnpublish}
         />
 
         {/* Main Layout: Conditional based on view mode */}
@@ -951,6 +1355,7 @@ function AudienceBuilderPage() {
                     engagements={schema.engagements}
                     recentlyUsed={recentlyUsed}
                     isVisible={true}
+                    activeSectionName={sections.find(s => s.id === activeSectionId)?.title || 'section'}
                     onItemClick={() => {}} // Deprecated
                     onPropertyClick={handlePropertyClick}
                     onClose={() => setActivePane(null)}
@@ -970,6 +1375,8 @@ function AudienceBuilderPage() {
                   syncDestinations={syncDestinations}
                   experimentMode={experimentMode}
                   isDestinationModalOpen={isDestinationModalOpen}
+                  sectionSelectionMode={sectionSelectionMode}
+                  sectionSelectedRules={sectionSelectedRules}
                   onSectionMatchTypeChange={handleSectionMatchTypeChange}
                   onSectionTimePeriodChange={handleSectionTimePeriodChange}
                   onSectionToggleCollapse={handleSectionToggleCollapse}
@@ -984,6 +1391,13 @@ function AudienceBuilderPage() {
                   onSetActiveSection={handleSetActiveSection}
                   onAddProperty={handleAddPropertyToSection}
                   onAddAISuggestions={handleAddAISuggestionsToSection}
+                  onEnterSelectionMode={handleEnterSelectionMode}
+                  onExitSelectionMode={handleExitSelectionMode}
+                  onToggleRuleSelection={handleToggleRuleSelection}
+                  onGroupSelected={handleGroupSelected}
+                  onUngroupGroup={handleUngroupGroup}
+                  onGroupMatchTypeChange={handleGroupMatchTypeChange}
+                  onRenameGroup={handleRenameGroup}
                   onOpenDestinationModal={() => setIsDestinationModalOpen(true)}
                   onCloseDestinationModal={() => setIsDestinationModalOpen(false)}
                   onSelectDestination={handleSelectDestination}
@@ -1005,8 +1419,9 @@ function AudienceBuilderPage() {
                     reachedGoals={reachedGoals}
                     timePeriod={previewTimePeriod}
                     onTimePeriodChange={setPreviewTimePeriod}
-                    hasGoals={(sections.find(s => s.id === 'goals')?.rules.length ?? 0) > 0}
-                    hasExitConditions={(sections.find(s => s.id === 'exit')?.rules.length ?? 0) > 0}
+                    hasGoals={(sections.find(s => s.id === 'goals')?.items.length ?? 0) > 0}
+                    hasExitConditions={(sections.find(s => s.id === 'exit')?.items.length ?? 0) > 0}
+                    isCalculating={isCalculating}
                   />
                 </Box>
               )}
@@ -1016,16 +1431,28 @@ function AudienceBuilderPage() {
               {/* VIEW MODE LAYOUT */}
 
               {/* Left: Dashboard */}
-              <Box flex="1" display="flex" justifyContent="center" pt={2} px={6} pb={6} overflowY="auto">
+              <Box flex="1" display="flex" justifyContent="center" pt={2} px={6} pb={6}>
                 <Dashboard
                   matchingProfiles={matchingProfiles}
                   sections={sections}
                   customers={customers}
+                  syncDestinations={syncDestinations}
+                  experimentMode={experimentMode}
+                  hasHistoricalData={hasHistoricalData}
+                  isLoadingData={isLoadingData}
+                  loadingProgress={loadingProgress}
+                  showSuccessBanner={showSuccessBanner}
+                  onLoadHistoricalData={handleOpenHistoricalDataModal}
+                  onCancelLoading={handleCancelLoading}
+                  onDismissSuccess={handleDismissSuccess}
                 />
               </Box>
 
               {/* Right: Audience Summary Panel */}
-              <Box pt={2} px={6} pb={6} display="flex" alignItems="flex-start">
+              <Box pt={2} px={6} pb={6} display="flex" flexDirection="column" alignItems="flex-start">
+                <Text fontSize="lg" fontWeight="semibold" color="gray.700" mb={6}>
+                  Definition
+                </Text>
                 <AudienceSummary
                   sections={sections}
                   syncDestinations={syncDestinations}
@@ -1048,10 +1475,22 @@ function AudienceBuilderPage() {
               opacity={0.9}
               fontSize="sm"
             >
-              {('property' in activeDragItem) ? activeDragItem.property.name : activeDragItem.propertyName}
+              {('property' in activeDragItem)
+                ? activeDragItem.property.name
+                : isRuleGroup(activeDragItem)
+                  ? (activeDragItem.name || 'Unnamed Group')
+                  : activeDragItem.propertyName
+              }
             </Box>
           ) : null}
         </DragOverlay>
+
+        {/* Historical Data Modal */}
+        <HistoricalDataModal
+          isOpen={isHistoricalDataModalOpen}
+          onClose={() => setIsHistoricalDataModalOpen(false)}
+          onLoadData={handleLoadHistoricalData}
+        />
       </Box>
     </DndContext>
   );

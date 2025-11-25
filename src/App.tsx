@@ -23,6 +23,9 @@ function App() {
         {/* Audience builder pages (no layout) */}
         <Route path="/audiences/new" element={<AudienceBuilderPage />} />
         <Route path="/audiences/:id" element={<AudienceBuilderPage />} />
+
+        {/* Catch-all: redirect any unmatched route to audiences */}
+        <Route path="*" element={<Navigate to="/audiences" replace />} />
       </Routes>
     </BrowserRouter>
   )

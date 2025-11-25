@@ -21,6 +21,8 @@ interface RuleRowProps {
   comment?: string
   trackVariable?: string
   sectionId?: string // To conditionally enable "Exclude matches" for entry section only
+  isInSelectionMode?: boolean // Whether the section is in selection mode for grouping
+  isSelected?: boolean // Whether this rule is currently selected
   onDelete: () => void
   onChange?: (data: {
     property: string
@@ -31,6 +33,7 @@ interface RuleRowProps {
   onToggleDisabled?: () => void
   onCommentChange?: (comment: string) => void
   onTrackVariableChange?: (variable: string) => void
+  onToggleSelection?: () => void
 }
 
 // Operator options based on data type
@@ -85,12 +88,15 @@ export function RuleRow({
   comment,
   trackVariable,
   sectionId,
+  isInSelectionMode = false,
+  isSelected = false,
   onDelete,
   onChange,
   onToggleExcluded,
   onToggleDisabled,
   onCommentChange,
-  onTrackVariableChange
+  onTrackVariableChange,
+  onToggleSelection,
 }: RuleRowProps) {
   const [selectedProperty] = useState<string>(preSelectedProperty || '')
   const [selectedOperator, setSelectedOperator] = useState<string>('')
@@ -194,6 +200,8 @@ export function RuleRow({
       style={style}
       borderBottom="1px solid"
       borderColor="gray.100"
+      borderLeft={isSelected ? '3px solid' : undefined}
+      borderLeftColor={isSelected ? 'blue.500' : undefined}
       opacity={disabled ? 0.4 : 1}
     >
       {/* Main row: Single line with all controls */}
@@ -202,23 +210,39 @@ export function RuleRow({
         gap={3}
         py={2}
         px={3}
-        bg={excluded ? 'red.50' : undefined}
-        _hover={{ bg: excluded ? 'red.100' : 'gray.50' }}
+        bg={isSelected ? 'blue.50' : (excluded ? 'red.50' : undefined)}
+        _hover={{ bg: isSelected ? 'blue.100' : (excluded ? 'red.100' : 'gray.50') }}
         transition="background 0.2s"
       >
-        {/* Drag handle */}
-        <Box
-          {...attributes}
-          {...listeners}
-          cursor="grab"
-          display="flex"
-          alignItems="center"
-          color="gray.400"
-          _hover={{ color: 'gray.600' }}
-          style={{ touchAction: 'none' }}
-        >
-          <DragIndicatorIcon fontSize="small" />
-        </Box>
+        {/* Selection checkbox - only visible in selection mode */}
+        {isInSelectionMode && (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggleSelection}
+            style={{
+              width: '16px',
+              height: '16px',
+              cursor: 'pointer',
+            }}
+          />
+        )}
+
+        {/* Drag handle - hide in selection mode */}
+        {!isInSelectionMode && (
+          <Box
+            {...attributes}
+            {...listeners}
+            cursor="grab"
+            display="flex"
+            alignItems="center"
+            color="gray.400"
+            _hover={{ color: 'gray.600' }}
+            style={{ touchAction: 'none' }}
+          >
+            <DragIndicatorIcon fontSize="small" />
+          </Box>
+        )}
 
         {/* Property name */}
         <Box minW="150px" flex="0 0 auto">
