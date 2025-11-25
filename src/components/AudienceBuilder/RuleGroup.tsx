@@ -9,7 +9,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { RuleRow } from './RuleRow';
 import type { AddedRule, MatchType } from './CriteriaSection';
-import type { PropertyDefinition } from '../../types/schema';
+import type { FactDefinition, EngagementDefinition } from '../../types/schema';
 
 interface RuleGroupProps {
   groupId: string;
@@ -18,8 +18,8 @@ interface RuleGroupProps {
   rules: AddedRule[];
   isCollapsed?: boolean;
   sectionId: string;
-  facts: PropertyDefinition[];
-  engagements: PropertyDefinition[];
+  facts: FactDefinition[];
+  engagements: EngagementDefinition[];
   onMatchTypeChange: (matchType: MatchType) => void;
   onRuleDelete: (ruleId: string) => void;
   onRuleChange: (ruleId: string, data: { property: string; operator: string; value: string | number | boolean }) => void;

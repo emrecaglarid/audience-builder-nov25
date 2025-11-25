@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { getAudience, saveAudience } from '../../services/audienceStorage';
 import {
   DndContext,
@@ -16,7 +16,7 @@ import {
 import type { DropAnimation } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useApp } from '@/context/AppContext';
-import { PropertyReference, PropertyDefinition } from '@/types';
+import { PropertyReference } from '@/types';
 import EditorHeader from './EditorHeader';
 import LibraryPane from './LibraryPane';
 import { Canvas } from './Canvas';
@@ -48,7 +48,7 @@ function AudienceBuilderPage() {
   // Local state for audience being edited
   const [audienceName, setAudienceName] = useState('New Audience');
   const [audienceId, setAudienceId] = useState<string | undefined>(undefined);
-  const [audienceStatus, setAudienceStatus] = useState<'unsaved' | 'draft' | 'published'>('unsaved');
+  const [audienceStatus, setAudienceStatus] = useState<'draft' | 'published'>('draft');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [recentlyUsed, setRecentlyUsed] = useState<PropertyReference[]>([]);
   const [activePane, setActivePane] = useState<ToolbarPane>('library');
@@ -630,7 +630,7 @@ function AudienceBuilderPage() {
     setIsHistoricalDataModalOpen(true);
   };
 
-  const handleLoadHistoricalData = async (startDate: Date, endDate: Date) => {
+  const handleLoadHistoricalData = async () => {
     // Close modal
     setIsHistoricalDataModalOpen(false);
 

@@ -28,6 +28,7 @@ interface RuleGroup {
   rules: AddedRule[];
   collapsed?: boolean;
   name?: string;
+  disabled?: boolean;
 }
 
 // Type guard to check if an item is a RuleGroup
@@ -158,22 +159,26 @@ export const AudienceSummary = ({
                     <VStack align="stretch" gap={0}>
                       {section.items
                         .filter(item => !isRuleGroup(item))
-                        .map((rule, index, array) => (
-                        <Box key={rule.id}>
-                          <Text
-                            fontSize="sm"
-                            color={rule.disabled ? 'gray.400' : 'gray.700'}
-                            textDecoration={rule.disabled ? 'line-through' : 'none'}
-                            py={2}
-                            px={3}
-                          >
-                            {ruleToSentence(rule)}
-                          </Text>
-                          {index < array.length - 1 && (
-                            <Separator />
-                          )}
-                        </Box>
-                      ))}
+                        .map((item, index, array) => {
+                          if (isRuleGroup(item)) return null;
+                          const rule = item as AddedRule;
+                          return (
+                            <Box key={rule.id}>
+                              <Text
+                                fontSize="sm"
+                                color={rule.disabled ? 'gray.400' : 'gray.700'}
+                                textDecoration={rule.disabled ? 'line-through' : 'none'}
+                                py={2}
+                                px={3}
+                              >
+                                {ruleToSentence(rule)}
+                              </Text>
+                              {index < array.length - 1 && (
+                                <Separator />
+                              )}
+                            </Box>
+                          );
+                        })}
                     </VStack>
                   </Box>
 

@@ -10,6 +10,7 @@ import type { MatchType, TimePeriod } from '@/components/AudienceBuilder/Criteri
 interface AddedRule {
   id: string;
   propertyId: string;
+  propertyName?: string;
   operator?: string;
   value?: any;
   disabled?: boolean;

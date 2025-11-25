@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { CriteriaSection, MatchType, TimePeriod, type AddedRule, type RuleGroup } from './CriteriaSection';
 import { SyncSection } from './SyncSection';
-import type { PropertyDefinition, FactDefinition, EngagementDefinition } from '../../types/schema';
+import type { FactDefinition, EngagementDefinition } from '../../types/schema';
 import type { PropertyMatch } from './PropertyDropdown';
 import type { AISuggestion } from './aiSuggestions';
 import type { AddedDestination, Destination } from '../../types/destination';

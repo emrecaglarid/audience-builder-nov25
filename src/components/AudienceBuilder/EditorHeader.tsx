@@ -10,7 +10,7 @@ import UnpublishedIcon from '@mui/icons-material/Unpublished'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-type AudienceStatus = 'unsaved' | 'draft' | 'published'
+type AudienceStatus = 'draft' | 'published'
 
 interface EditorHeaderProps {
   audienceName: string
@@ -140,7 +140,7 @@ function EditorHeader({
           </Flex>
 
           {/* Secondary actions - left */}
-          {isViewMode && status === 'published' && onLoadHistoricalData && (
+          {isViewMode && status === 'published' && !hasHistoricalData && onLoadHistoricalData && (
             <Button
               variant="outline"
               size="md"
@@ -158,15 +158,9 @@ function EditorHeader({
           )}
 
           {/* Primary CTA - right side */}
-          {hasUnsavedChanges && status === 'unsaved' && (
+          {hasUnsavedChanges && status === 'draft' && (
             <Button colorScheme="purple" size="md" onClick={onSave}>
               Save as draft
-            </Button>
-          )}
-
-          {hasUnsavedChanges && status === 'draft' && (
-            <Button colorScheme="purple" size="md" onClick={onPublish}>
-              Publish
             </Button>
           )}
 

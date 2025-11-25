@@ -35,16 +35,6 @@ export interface SavedAudienceSection {
   isCollapsed: boolean;
 }
 
-// Legacy type for backward compatibility
-interface LegacySavedAudienceSection {
-  id: string;
-  title: string;
-  rules: SavedAudienceRule[];
-  matchType: MatchType;
-  timePeriod: TimePeriod;
-  isCollapsed: boolean;
-}
-
 export interface SavedAudience {
   id: string;
   name: string;
