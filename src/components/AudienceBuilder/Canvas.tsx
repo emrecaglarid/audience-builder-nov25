@@ -1,13 +1,21 @@
-import { Box, Text, VStack, Flex } from '@chakra-ui/react';
+import { Box, Text, VStack, Flex, Button } from '@chakra-ui/react';
 import AddIcon from '@mui/icons-material/Add';
 import { useState } from 'react';
-import { useDroppable } from '@dnd-kit/core';
 import { CriteriaSection, MatchType, TimePeriod, type AddedRule, type RuleGroup } from './CriteriaSection';
 import { SyncSection } from './SyncSection';
 import type { FactDefinition, EngagementDefinition } from '../../types/schema';
 import type { PropertyMatch } from './PropertyDropdown';
 import type { AISuggestion } from './aiSuggestions';
 import type { AddedDestination, Destination } from '../../types/destination';
+
+const TIME_PERIOD_LABELS: Record<TimePeriod, string> = {
+  'last7days': 'in the last 7 days',
+  'last30days': 'in the last 30 days',
+  'last90days': 'in the last 90 days',
+  'lastYear': 'in the last year',
+  'allTime': 'all time',
+  'customRange': 'custom range',
+};
 
 interface SectionConfig {
   id: string;
@@ -25,6 +33,10 @@ interface CanvasProps {
   focusSectionId: string | null;
   activatedSections: Set<string>;
   activeSectionId: string;
+  activeTab: 'define' | 'sync' | 'analyze';
+  shouldSplitEntry?: boolean;
+  entryFacts?: AddedRule[];
+  entryEngagements?: AddedRule[];
   syncDestinations: AddedDestination[];
   experimentMode: boolean;
   isDestinationModalOpen: boolean;
@@ -80,20 +92,11 @@ interface GhostSectionProps {
 const GhostSection = ({ sectionId, title, description, onAddSection }: GhostSectionProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: sectionId,
-    data: {
-      type: 'ghost-section',
-      sectionId,
-    },
-  });
-
   return (
     <Box
-      ref={setNodeRef}
       borderRadius="lg"
       border="1px solid"
-      borderColor={isOver ? 'blue.400' : 'gray.100'}
+      borderColor="gray.100"
       px={4}
       py={3}
       cursor="pointer"
@@ -101,7 +104,6 @@ const GhostSection = ({ sectionId, title, description, onAddSection }: GhostSect
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       _hover={{ bg: 'gray.50' }}
-      boxShadow={isOver ? 'lg' : 'none'}
       transition="all 0.2s"
     >
       <Flex align="center" gap={2}>
@@ -126,6 +128,10 @@ export const Canvas = ({
   focusSectionId,
   activatedSections,
   activeSectionId,
+  activeTab,
+  shouldSplitEntry = false,
+  entryFacts = [],
+  entryEngagements = [],
   syncDestinations,
   experimentMode,
   isDestinationModalOpen,
@@ -163,8 +169,20 @@ export const Canvas = ({
   onExperimentToggle,
   onSplitEqually,
 }: CanvasProps) => {
+  // Filter sections based on active tab
+  const visibleSections = sections.filter(section => {
+    if (activeTab === 'define') {
+      // Define tab: show entry, goals, exit
+      return section.id === 'entry' || section.id === 'goals' || section.id === 'exit';
+    } else if (activeTab === 'sync') {
+      // Sync tab: show only sync
+      return section.id === 'sync';
+    }
+    return false;
+  });
+
   // Check if any section has items (used to show/hide ghost sections)
-  const hasAnyRules = sections.some(section => section.items.length > 0);
+  const hasAnyRules = visibleSections.some(section => section.items.length > 0);
 
   return (
     <Box
@@ -172,7 +190,70 @@ export const Canvas = ({
       maxWidth="900px"
     >
       <VStack align="stretch" gap={4}>
-        {sections.map((section) => {
+        {visibleSections.map((section) => {
+          // Special handling for entry section when split
+          if (section.id === 'entry' && shouldSplitEntry) {
+            return (
+              <Box
+                key={section.id}
+                bg="white"
+                borderRadius="lg"
+                border="1px solid"
+                borderColor="gray.200"
+                overflow="hidden"
+                mb={4}
+              >
+                {/* Main Entry Header */}
+                <Flex
+                  align="center"
+                  px={4}
+                  py={3}
+                  borderBottom="1px solid"
+                  borderColor="gray.200"
+                >
+                  <Text fontSize="md" fontWeight="semibold" color="gray.700">
+                    {section.title}
+                  </Text>
+                </Flex>
+
+                {/* Facts Subsection */}
+                <Box px={4} py={3} borderBottom="1px solid" borderColor="gray.100">
+                  <Flex align="center" justify="space-between" mb={2}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.600">
+                      Facts
+                    </Text>
+                    <Button size="xs" variant="ghost" colorScheme="blue">
+                      {section.matchType === 'all' ? 'all' : 'any'}
+                    </Button>
+                  </Flex>
+                  {entryFacts.map((rule) => (
+                    <div key={rule.id}>Rule: {rule.propertyName}</div>
+                  ))}
+                </Box>
+
+                {/* Engagements Subsection */}
+                <Box px={4} py={3}>
+                  <Flex align="center" justify="space-between" mb={2}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.600">
+                      Engagements
+                    </Text>
+                    <Flex align="center" gap={2}>
+                      <Button size="xs" variant="ghost" colorScheme="blue">
+                        {section.matchType === 'any' ? 'any' : 'all'}
+                      </Button>
+                      <Button size="xs" variant="ghost" colorScheme="blue">
+                        {TIME_PERIOD_LABELS[section.timePeriod]}
+                      </Button>
+                    </Flex>
+                  </Flex>
+                  {entryEngagements.map((rule) => (
+                    <div key={rule.id}>Rule: {rule.propertyName}</div>
+                  ))}
+                </Box>
+              </Box>
+            );
+          }
+
           // Special handling for sync section
           if (section.id === 'sync') {
             // Show sync section if it has destinations OR has been activated
@@ -248,6 +329,7 @@ export const Canvas = ({
               isActive={activeSectionId === section.id}
               isInSelectionMode={sectionSelectionMode[section.id] || false}
               selectedRuleIds={sectionSelectedRules[section.id] || new Set()}
+              isEngagementsOnly={section.id === 'exit' || section.id === 'goals'}
               facts={facts}
               engagements={engagements}
               onMatchTypeChange={(matchType) => onSectionMatchTypeChange(section.id, matchType)}

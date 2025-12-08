@@ -15,6 +15,7 @@ interface PropertyDropdownProps {
   searchQuery: string;
   facts: FactDefinition[];
   engagements: EngagementDefinition[];
+  isEngagementsOnly?: boolean;
   selectedIndex: number;
   onSelect: (match: PropertyMatch) => void;
   onMouseEnter: (index: number) => void;
@@ -26,6 +27,7 @@ export function PropertyDropdown({
   searchQuery,
   facts,
   engagements,
+  isEngagementsOnly = false,
   selectedIndex,
   onSelect,
   onMouseEnter,
@@ -39,8 +41,9 @@ export function PropertyDropdown({
     const query = searchQuery.toLowerCase();
     const results: PropertyMatch[] = [];
 
-    // Search facts
-    facts.forEach((fact) => {
+    // Search facts (skip if engagements only)
+    if (!isEngagementsOnly) {
+      facts.forEach((fact) => {
       fact.properties.forEach((property) => {
         const nameMatch = property.name.toLowerCase().includes(query);
         const descMatch = property.description.toLowerCase().includes(query);
@@ -65,6 +68,7 @@ export function PropertyDropdown({
         }
       });
     });
+    }
 
     // Search engagements
     engagements.forEach((engagement) => {
@@ -99,7 +103,7 @@ export function PropertyDropdown({
         return a.property.name.localeCompare(b.property.name);
       })
       .slice(0, 8); // Limit to top 8 results
-  }, [searchQuery, facts, engagements]);
+  }, [searchQuery, facts, engagements, isEngagementsOnly]);
 
   // Show dropdown if there are matches OR if there's a search query (to show AI option)
   if (matches.length === 0 && !searchQuery) {

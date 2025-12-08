@@ -11,6 +11,7 @@ interface CriteriaSearchInputProps {
   sectionId?: string;
   facts: FactDefinition[];
   engagements: EngagementDefinition[];
+  isEngagementsOnly?: boolean;
   shouldFocus?: boolean;
   hasAnyRules?: boolean;
   onAddProperty: (match: PropertyMatch) => void;
@@ -26,6 +27,7 @@ export function CriteriaSearchInput({
   sectionId,
   facts,
   engagements,
+  isEngagementsOnly = false,
   shouldFocus = false,
   hasAnyRules = false,
   onAddProperty,
@@ -315,6 +317,7 @@ export function CriteriaSearchInput({
           searchQuery={searchValue}
           facts={facts}
           engagements={engagements}
+          isEngagementsOnly={isEngagementsOnly}
           selectedIndex={selectedIndex}
           onSelect={handlePropertySelect}
           onMouseEnter={setSelectedIndex}

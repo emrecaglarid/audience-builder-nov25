@@ -11,18 +11,18 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 type AudienceStatus = 'draft' | 'published'
+type TabType = 'define' | 'sync' | 'analyze'
 
 interface EditorHeaderProps {
   audienceName: string
   status: AudienceStatus
   hasUnsavedChanges: boolean
-  isViewMode: boolean
+  activeTab: TabType
   hasCompleteRule: boolean
   onNameChange: (name: string) => void
   onSave: () => void
   onPublish: () => void
-  onAnalyze: () => void
-  onEdit: () => void
+  onTabChange: (tab: TabType) => void
   lastModified: string
   hasHistoricalData?: boolean
   isLoadingData?: boolean
@@ -34,13 +34,12 @@ function EditorHeader({
   audienceName,
   status,
   hasUnsavedChanges,
-  isViewMode,
+  activeTab,
   hasCompleteRule,
   onNameChange,
   onSave,
   onPublish,
-  onAnalyze,
-  onEdit,
+  onTabChange,
   lastModified,
   hasHistoricalData,
   isLoadingData,
@@ -92,7 +91,7 @@ function EditorHeader({
     >
       <Flex height="100%" alignItems="center" justifyContent="space-between">
         {/* Left side */}
-        <Flex alignItems="center" gap={3}>
+        <Flex alignItems="center" gap={3} flex="1">
           <IconButton
             aria-label="Go back"
             variant="ghost"
@@ -130,8 +129,57 @@ function EditorHeader({
           )}
         </Flex>
 
+        {/* Center - Tab Navigation (Segmented Control) */}
+        <Flex
+          alignItems="center"
+          flex="0 0 auto"
+          bg="gray.100"
+          borderRadius="md"
+          p={0.5}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onTabChange('define')}
+            bg={activeTab === 'define' ? 'white' : 'transparent'}
+            color={activeTab === 'define' ? 'gray.900' : 'gray.600'}
+            fontWeight={activeTab === 'define' ? 'semibold' : 'normal'}
+            _hover={{ bg: activeTab === 'define' ? 'white' : 'gray.200' }}
+            boxShadow={activeTab === 'define' ? 'sm' : 'none'}
+            borderRadius="md"
+          >
+            Define
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onTabChange('sync')}
+            bg={activeTab === 'sync' ? 'white' : 'transparent'}
+            color={activeTab === 'sync' ? 'gray.900' : 'gray.600'}
+            fontWeight={activeTab === 'sync' ? 'semibold' : 'normal'}
+            _hover={{ bg: activeTab === 'sync' ? 'white' : 'gray.200' }}
+            boxShadow={activeTab === 'sync' ? 'sm' : 'none'}
+            borderRadius="md"
+          >
+            Sync
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onTabChange('analyze')}
+            bg={activeTab === 'analyze' ? 'white' : 'transparent'}
+            color={activeTab === 'analyze' ? 'gray.900' : 'gray.600'}
+            fontWeight={activeTab === 'analyze' ? 'semibold' : 'normal'}
+            _hover={{ bg: activeTab === 'analyze' ? 'white' : 'gray.200' }}
+            boxShadow={activeTab === 'analyze' ? 'sm' : 'none'}
+            borderRadius="md"
+          >
+            Analyze
+          </Button>
+        </Flex>
+
         {/* Right side */}
-        <Flex alignItems="center" gap={4}>
+        <Flex alignItems="center" gap={4} flex="1" justifyContent="flex-end">
           <Flex alignItems="center" gap={2}>
             {getStatusBadge()}
             <Text fontSize="sm" color="gray.600">
@@ -139,8 +187,8 @@ function EditorHeader({
             </Text>
           </Flex>
 
-          {/* Secondary actions - left */}
-          {isViewMode && status === 'published' && !hasHistoricalData && onLoadHistoricalData && (
+          {/* Secondary actions */}
+          {activeTab === 'analyze' && status === 'published' && !hasHistoricalData && onLoadHistoricalData && (
             <Button
               variant="outline"
               size="md"
@@ -151,12 +199,6 @@ function EditorHeader({
             </Button>
           )}
 
-          {!isViewMode && hasCompleteRule && status === 'published' && (
-            <Button variant="outline" size="md" onClick={onAnalyze}>
-              Analyze
-            </Button>
-          )}
-
           {/* Primary CTA - right side */}
           {hasUnsavedChanges && status === 'draft' && (
             <Button colorScheme="purple" size="md" onClick={onSave}>
@@ -164,21 +206,15 @@ function EditorHeader({
             </Button>
           )}
 
-          {hasUnsavedChanges && status === 'published' && !isViewMode && (
+          {hasUnsavedChanges && status === 'published' && (
             <Button colorScheme="purple" size="md" onClick={onSave}>
               Save changes
             </Button>
           )}
 
-          {!hasUnsavedChanges && status === 'draft' && (
+          {!hasUnsavedChanges && status === 'draft' && hasCompleteRule && (
             <Button colorScheme="purple" size="md" onClick={onPublish}>
               Publish
-            </Button>
-          )}
-
-          {isViewMode && (
-            <Button colorScheme="purple" size="md" onClick={onEdit}>
-              Edit
             </Button>
           )}
 

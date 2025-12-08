@@ -7,9 +7,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import AddIcon from '@mui/icons-material/Add'
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import { useState, useMemo } from 'react'
-import { useDraggable } from '@dnd-kit/core'
 import { FactDefinition, EngagementDefinition, PropertyDefinition, PropertyReference } from '@/types'
 
 // Map section titles to concise tooltip text
@@ -54,7 +52,7 @@ interface DraggablePropertyItemProps {
 
 function DraggablePropertyItem({
   property,
-  propertyRef,
+  propertyRef: _propertyRef,
   propertyKey,
   hoveredProperty,
   activeSectionName,
@@ -62,19 +60,10 @@ function DraggablePropertyItem({
   onMouseLeave,
   onClick,
 }: DraggablePropertyItemProps) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: propertyKey,
-    data: {
-      ...propertyRef,
-      dragType: 'property', // Use dragType to avoid overwriting propertyRef.type
-    },
-  })
-
   const isHovered = hoveredProperty === propertyKey
 
   return (
     <Flex
-      ref={setNodeRef}
       align="center"
       justify="space-between"
       px={4}
@@ -84,24 +73,8 @@ function DraggablePropertyItem({
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      opacity={isDragging ? 0.5 : 1}
       transition="opacity 0.2s"
     >
-      {/* Drag handle - visible on hover */}
-      <Box
-        opacity={isHovered ? 1 : 0}
-        transition="opacity 0.2s"
-        mr={2}
-        display="flex"
-        alignItems="center"
-        color="gray.400"
-        cursor={isDragging ? 'grabbing' : 'grab'}
-        {...listeners}
-        {...attributes}
-      >
-        <DragIndicatorIcon fontSize="small" style={{ fontSize: '16px' }} />
-      </Box>
-
       <Box flex={1}>
         <Text fontSize="sm">{property.name}</Text>
         {property.description && (

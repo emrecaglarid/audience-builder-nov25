@@ -265,7 +265,17 @@ function sectionToConditionGroup(
 }
 
 /**
+ * Helper to check if a rule belongs to a fact (vs engagement)
+ */
+function isFactRule(rule: AddedRule, schema: SchemaData): boolean {
+  const parent = findParent(rule.parentName, schema);
+  if (!parent) return false;
+  return schema.facts.some(f => f.id === parent.id || f.name === parent.name);
+}
+
+/**
  * Convert sections configuration to a ConditionGroup for the query engine
+ * Handles splitting entry section into facts and engagements when both are present
  */
 export function sectionsToConditionGroup(
   sections: SectionConfig[],
@@ -282,6 +292,83 @@ export function sectionsToConditionGroup(
     };
   }
 
+  // Separate facts from engagements in entry section
+  const factItems: (AddedRule | RuleGroup)[] = [];
+  const engagementItems: (AddedRule | RuleGroup)[] = [];
+
+  for (const item of entrySection.items) {
+    if (isRuleGroup(item)) {
+      // For groups, check if all rules are facts or engagements
+      const allFacts = item.rules.every(rule => isFactRule(rule, schema));
+      const allEngagements = item.rules.every(rule => !isFactRule(rule, schema));
+
+      if (allFacts) {
+        factItems.push(item);
+      } else if (allEngagements) {
+        engagementItems.push(item);
+      } else {
+        // Mixed group - split the rules
+        const factRules = item.rules.filter(rule => isFactRule(rule, schema));
+        const engagementRules = item.rules.filter(rule => !isFactRule(rule, schema));
+
+        if (factRules.length > 0) {
+          factItems.push({ ...item, rules: factRules });
+        }
+        if (engagementRules.length > 0) {
+          engagementItems.push({ ...item, rules: engagementRules });
+        }
+      }
+    } else {
+      // Individual rule
+      if (isFactRule(item, schema)) {
+        factItems.push(item);
+      } else {
+        engagementItems.push(item);
+      }
+    }
+  }
+
+  const hasFacts = factItems.length > 0;
+  const hasEngagements = engagementItems.length > 0;
+
+  // If we have both facts and engagements, combine with AND
+  if (hasFacts && hasEngagements) {
+    const factSection: SectionConfig = {
+      ...entrySection,
+      items: factItems,
+    };
+    const engagementSection: SectionConfig = {
+      ...entrySection,
+      items: engagementItems,
+    };
+
+    const factConditions = sectionToConditionGroup(factSection, schema);
+    const engagementConditions = sectionToConditionGroup(engagementSection, schema);
+
+    const conditions: Array<FactCondition | EngagementCondition | ConditionGroup> = [];
+
+    if (factConditions && factConditions.conditions.length > 0) {
+      conditions.push(factConditions);
+    }
+    if (engagementConditions && engagementConditions.conditions.length > 0) {
+      conditions.push(engagementConditions);
+    }
+
+    if (conditions.length === 0) {
+      return {
+        operator: 'AND',
+        conditions: [],
+      };
+    }
+
+    // Combine facts AND engagements
+    return {
+      operator: 'AND',
+      conditions,
+    };
+  }
+
+  // Otherwise, process as a single section
   const entrySectionConditions = sectionToConditionGroup(entrySection, schema);
 
   if (!entrySectionConditions || entrySectionConditions.conditions.length === 0) {

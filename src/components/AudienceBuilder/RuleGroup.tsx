@@ -3,10 +3,7 @@ import { Menu } from '@chakra-ui/react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useState } from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { RuleRow } from './RuleRow';
 import type { AddedRule, MatchType } from './CriteriaSection';
 import type { FactDefinition, EngagementDefinition } from '../../types/schema';
@@ -32,7 +29,7 @@ interface RuleGroupProps {
 }
 
 export function RuleGroup({
-  groupId,
+  groupId: _groupId,
   name,
   matchType,
   rules,
@@ -52,28 +49,6 @@ export function RuleGroup({
   const [isEditingName, setIsEditingName] = useState(false);
   const [groupName, setGroupName] = useState(name || 'Unnamed Group');
 
-  // Set up sortable for the group itself
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: groupId,
-    data: {
-      dragType: 'group',
-      groupId,
-    },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
   const handleSaveName = () => {
     onRename(groupName);
     setIsEditingName(false);
@@ -90,8 +65,6 @@ export function RuleGroup({
 
   return (
     <Box
-      ref={setNodeRef}
-      style={style}
       ml={4}
       my={2}
       border="1px solid"
@@ -110,22 +83,8 @@ export function RuleGroup({
         bg="white"
         borderTopRadius="md"
       >
-        {/* Left side: Drag handle + Collapse icon + Name */}
+        {/* Left side: Collapse icon + Name */}
         <Flex align="center" gap={2}>
-          {/* Drag handle */}
-          <Box
-            {...attributes}
-            {...listeners}
-            cursor="grab"
-            display="flex"
-            alignItems="center"
-            color="gray.400"
-            _hover={{ color: 'gray.600' }}
-            style={{ touchAction: 'none' }}
-          >
-            <DragIndicatorIcon fontSize="small" />
-          </Box>
-
           {/* Collapse icon */}
           <IconButton
             aria-label={collapsed ? 'Expand group' : 'Collapse group'}

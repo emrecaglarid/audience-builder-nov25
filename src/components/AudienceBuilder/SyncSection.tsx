@@ -2,7 +2,6 @@ import { Box, Button, Text, Flex } from '@chakra-ui/react'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AddIcon from '@mui/icons-material/Add'
-import { useDroppable } from '@dnd-kit/core'
 import { useState, useRef } from 'react'
 import { DestinationRow } from './DestinationRow'
 import { DestinationPickerModal } from './DestinationPickerModal'
@@ -183,15 +182,6 @@ export function SyncSection({
   onExperimentToggle,
   onSplitEqually,
 }: SyncSectionProps) {
-  // Set up droppable for this section
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'sync',
-    data: {
-      type: 'section',
-      sectionId: 'sync',
-    },
-  })
-
   // Calculate total percentage for experiment mode
   const totalPercentage = destinations.reduce((sum, dest) => sum + (dest.trafficPercentage || 0), 0)
   const hasPercentageError = experimentMode && totalPercentage !== 100
@@ -199,14 +189,13 @@ export function SyncSection({
   return (
     <>
       <Box
-        ref={setNodeRef}
         bg="white"
         borderRadius="lg"
         border="1px solid"
-        borderColor={isActive ? 'blue.500' : (isOver ? 'blue.400' : 'gray.200')}
+        borderColor={isActive ? 'blue.500' : 'gray.200'}
         overflow="hidden"
         mb={4}
-        boxShadow={isActive ? '0 0 0 3px rgba(66, 153, 225, 0.15)' : (isOver ? 'lg' : 'none')}
+        boxShadow={isActive ? '0 0 0 3px rgba(66, 153, 225, 0.15)' : 'none'}
         transition="all 0.2s"
         cursor="pointer"
         onClick={onSetActive}

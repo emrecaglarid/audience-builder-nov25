@@ -2,19 +2,6 @@ import { useParams } from 'react-router-dom';
 import { Box, Flex, Text } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import { getAudience, saveAudience } from '../../services/audienceStorage';
-import {
-  DndContext,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  pointerWithin,
-  defaultDropAnimationSideEffects,
-} from '@dnd-kit/core';
-import type { DropAnimation } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
 import { useApp } from '@/context/AppContext';
 import { PropertyReference } from '@/types';
 import EditorHeader from './EditorHeader';
@@ -41,6 +28,14 @@ interface SectionConfig {
   isCollapsed: boolean;
 }
 
+// Helper function to determine if a rule belongs to a fact or engagement
+function isFactItem(item: AddedRule, schema: any): boolean {
+  // Check if the item's properties match any fact's properties
+  return schema?.facts.some((fact: any) =>
+    fact.properties.some((prop: any) => prop.id === item.propertyId)
+  ) || false;
+}
+
 function AudienceBuilderPage() {
   const { id } = useParams<{ id: string }>();
   const { schema, customers } = useApp();
@@ -57,8 +52,8 @@ function AudienceBuilderPage() {
   const [activatedSections, setActivatedSections] = useState<Set<string>>(new Set(['entry']));
   const [activeSectionId, setActiveSectionId] = useState<string>('entry');
 
-  // View mode state
-  const [viewMode, setViewMode] = useState<'edit' | 'view'>('edit');
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'define' | 'sync' | 'analyze'>('define');
 
   // Sync & activation state
   const [syncDestinations, setSyncDestinations] = useState<AddedDestination[]>([]);
@@ -72,21 +67,8 @@ function AudienceBuilderPage() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [isHistoricalDataModalOpen, setIsHistoricalDataModalOpen] = useState(false);
 
-  // Drag and drop state
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeDragItem, setActiveDragItem] = useState<PropertyReference | AddedRule | RuleGroup | null>(null);
-
   // Preview calculation state
   const [isCalculating, setIsCalculating] = useState(false);
-
-  // Set up drag sensors (mouse only for now)
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // 8px movement required before drag starts
-      },
-    })
-  );
 
   // Load audience from localStorage if ID provided
   useEffect(() => {
@@ -112,9 +94,9 @@ function AudienceBuilderPage() {
           setHasHistoricalData(saved.hasHistoricalData);
         }
 
-        // Auto-switch to view mode if published
-        if (saved.status === 'published') {
-          setViewMode('view');
+        // Auto-switch to analyze tab if published and has historical data
+        if (saved.status === 'published' && saved.hasHistoricalData) {
+          setActiveTab('analyze');
         }
       }
     }
@@ -593,13 +575,6 @@ function AudienceBuilderPage() {
     if (isFirstPublish) {
       setHasHistoricalData(false);
     }
-    // Switch to view mode after publish
-    setViewMode('view');
-  };
-
-  const handleEdit = () => {
-    // Enable edit mode for published audience
-    setViewMode('edit');
   };
 
   const handleUnpublish = () => {
@@ -617,12 +592,16 @@ function AudienceBuilderPage() {
     setAudienceStatus('draft');
     setHasHistoricalData(false);
     setHasUnsavedChanges(false);
-    // Switch back to edit mode
-    setViewMode('edit');
   };
 
-  const handleAnalyzeAudience = () => {
-    setViewMode('view');
+  const handleTabChange = (newTab: 'define' | 'sync' | 'analyze') => {
+    if (hasUnsavedChanges && activeTab === 'define' && newTab !== 'define') {
+      const confirmed = window.confirm('You have unsaved changes. Do you want to save before leaving?');
+      if (confirmed) {
+        handleSave();
+      }
+    }
+    setActiveTab(newTab);
   };
 
   // Historical data handlers
@@ -853,387 +832,6 @@ function AudienceBuilderPage() {
     }
   };
 
-  // Drag and drop handlers
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    setActiveId(active.id as string);
-
-    // Store the dragged item data for the overlay
-    if (active.data.current) {
-      setActiveDragItem(active.data.current as PropertyReference | AddedRule | RuleGroup);
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    setActiveId(null);
-    setActiveDragItem(null);
-
-    if (!over) return;
-
-    // Handle different drag scenarios
-    const activeData = active.data.current;
-    const overData = over.data.current;
-
-    // Scenario 1: Dragging a property from library to a section
-    if (activeData?.dragType === 'property' && overData?.type === 'section') {
-      const propertyRef = activeData as PropertyReference;
-      const sectionId = over.id as string;
-
-      // Find the parent item to get all properties for the dropdown
-      const parentItem = propertyRef.type === 'fact'
-        ? schema?.facts.find(f => f.id === propertyRef.parentId)
-        : schema?.engagements.find(e => e.id === propertyRef.parentId);
-
-      if (!parentItem) return;
-
-      // Create a minimal rule with just the property selected, but include all parent properties
-      const newRule: AddedRule = {
-        id: `rule-${Date.now()}`,
-        propertyId: propertyRef.property.id,
-        propertyName: propertyRef.property.name,
-        parentName: propertyRef.parentName,
-        properties: parentItem.properties, // Include all properties for dropdown
-      };
-
-      setSections(prevSections =>
-        prevSections.map(section =>
-          section.id === sectionId
-            ? { ...section, items: [...section.items, newRule] }
-            : section
-        )
-      );
-
-      console.log('Created rule from library drag:', newRule, 'in section:', sectionId);
-    }
-
-    // Scenario 1b: Dragging a property from library over a rule (middle area)
-    if (activeData?.dragType === 'property' && overData?.dragType === 'rule') {
-      const propertyRef = activeData as PropertyReference;
-      const overRuleId = over.id as string;
-
-      // Find which section contains the rule we're hovering over
-      const sectionWithRule = sections.find(section =>
-        section.items.some(item => !isRuleGroup(item) && item.id === overRuleId)
-      );
-
-      if (!sectionWithRule) return;
-
-      // Find the parent item to get all properties for the dropdown
-      const parentItem = propertyRef.type === 'fact'
-        ? schema?.facts.find(f => f.id === propertyRef.parentId)
-        : schema?.engagements.find(e => e.id === propertyRef.parentId);
-
-      if (!parentItem) return;
-
-      // Create a new rule
-      const newRule: AddedRule = {
-        id: `rule-${Date.now()}`,
-        propertyId: propertyRef.property.id,
-        propertyName: propertyRef.property.name,
-        parentName: propertyRef.parentName,
-        properties: parentItem.properties,
-      };
-
-      setSections(prevSections =>
-        prevSections.map(section =>
-          section.id === sectionWithRule.id
-            ? { ...section, items: [...section.items, newRule] }
-            : section
-        )
-      );
-
-      console.log('Created rule from library drag over rule:', newRule, 'in section:', sectionWithRule.id);
-    }
-
-    // Scenario 2: Reordering rules within the same section
-    if (activeData?.dragType === 'rule' && overData?.dragType === 'rule') {
-      const activeRuleId = active.id as string;
-      const overRuleId = over.id as string;
-
-      if (activeRuleId === overRuleId) return;
-
-      // Find which section contains these rules
-      setSections(prevSections => {
-        // Find the section containing the active rule
-        const sectionWithRule = prevSections.find(section =>
-          section.items.some(item => !isRuleGroup(item) && item.id === activeRuleId)
-        );
-
-        if (!sectionWithRule) return prevSections;
-
-        return prevSections.map(section => {
-          if (section.id !== sectionWithRule.id) return section;
-
-          const oldIndex = section.items.findIndex(item => !isRuleGroup(item) && item.id === activeRuleId);
-          const newIndex = section.items.findIndex(item => !isRuleGroup(item) && item.id === overRuleId);
-
-          return {
-            ...section,
-            items: arrayMove(section.items, oldIndex, newIndex),
-          };
-        });
-      });
-
-      console.log('Reordered rule:', activeRuleId, 'to position of:', overRuleId);
-    }
-
-    // Scenario 2b: Reordering groups within the same section
-    if (activeData?.dragType === 'group' && overData?.dragType === 'group') {
-      const activeGroupId = active.id as string;
-      const overGroupId = over.id as string;
-
-      if (activeGroupId === overGroupId) return;
-
-      // Find which section contains these groups
-      setSections(prevSections => {
-        // Find the section containing the active group
-        const sectionWithGroup = prevSections.find(section =>
-          section.items.some(item => isRuleGroup(item) && item.id === activeGroupId)
-        );
-
-        if (!sectionWithGroup) return prevSections;
-
-        return prevSections.map(section => {
-          if (section.id !== sectionWithGroup.id) return section;
-
-          const oldIndex = section.items.findIndex(item => isRuleGroup(item) && item.id === activeGroupId);
-          const newIndex = section.items.findIndex(item => isRuleGroup(item) && item.id === overGroupId);
-
-          return {
-            ...section,
-            items: arrayMove(section.items, oldIndex, newIndex),
-          };
-        });
-      });
-
-      console.log('Reordered group:', activeGroupId, 'to position of:', overGroupId);
-    }
-
-    // Scenario 2c: Dragging a rule over a group (reorder within section)
-    if (activeData?.dragType === 'rule' && overData?.dragType === 'group') {
-      const activeRuleId = active.id as string;
-      const overGroupId = over.id as string;
-
-      // Find which section contains these items
-      setSections(prevSections => {
-        // Find the section containing the active rule
-        const sectionWithRule = prevSections.find(section =>
-          section.items.some(item => !isRuleGroup(item) && item.id === activeRuleId)
-        );
-
-        if (!sectionWithRule) return prevSections;
-
-        return prevSections.map(section => {
-          if (section.id !== sectionWithRule.id) return section;
-
-          const oldIndex = section.items.findIndex(item => !isRuleGroup(item) && item.id === activeRuleId);
-          const newIndex = section.items.findIndex(item => isRuleGroup(item) && item.id === overGroupId);
-
-          return {
-            ...section,
-            items: arrayMove(section.items, oldIndex, newIndex),
-          };
-        });
-      });
-
-      console.log('Reordered rule:', activeRuleId, 'near group:', overGroupId);
-    }
-
-    // Scenario 2d: Dragging a group over a rule (reorder within section)
-    if (activeData?.dragType === 'group' && overData?.dragType === 'rule') {
-      const activeGroupId = active.id as string;
-      const overRuleId = over.id as string;
-
-      // Find which section contains these items
-      setSections(prevSections => {
-        // Find the section containing the active group
-        const sectionWithGroup = prevSections.find(section =>
-          section.items.some(item => isRuleGroup(item) && item.id === activeGroupId)
-        );
-
-        if (!sectionWithGroup) return prevSections;
-
-        return prevSections.map(section => {
-          if (section.id !== sectionWithGroup.id) return section;
-
-          const oldIndex = section.items.findIndex(item => isRuleGroup(item) && item.id === activeGroupId);
-          const newIndex = section.items.findIndex(item => !isRuleGroup(item) && item.id === overRuleId);
-
-          return {
-            ...section,
-            items: arrayMove(section.items, oldIndex, newIndex),
-          };
-        });
-      });
-
-      console.log('Reordered group:', activeGroupId, 'near rule:', overRuleId);
-    }
-
-    // Scenario 3: Moving a rule to a different section
-    if (activeData?.dragType === 'rule' && overData?.type === 'section') {
-      const ruleId = active.id as string;
-      const targetSectionId = over.id as string;
-
-      setSections(prevSections => {
-        // Find the rule and its current section
-        let ruleToMove: AddedRule | undefined;
-        let sourceSectionId: string | undefined;
-
-        for (const section of prevSections) {
-          const item = section.items.find(i => !isRuleGroup(i) && i.id === ruleId);
-          if (item && !isRuleGroup(item)) {
-            ruleToMove = item;
-            sourceSectionId = section.id;
-            break;
-          }
-        }
-
-        if (!ruleToMove || !sourceSectionId || sourceSectionId === targetSectionId) {
-          return prevSections;
-        }
-
-        // Remove from source section and add to target section
-        return prevSections.map(section => {
-          if (section.id === sourceSectionId) {
-            return {
-              ...section,
-              items: section.items.filter(i => !((!isRuleGroup(i)) && i.id === ruleId)),
-            };
-          } else if (section.id === targetSectionId) {
-            return {
-              ...section,
-              items: [...section.items, ruleToMove],
-            };
-          }
-          return section;
-        });
-      });
-
-      console.log('Moved rule:', ruleId, 'to section:', targetSectionId);
-    }
-
-    // Scenario 3b: Moving a group to a different section
-    if (activeData?.dragType === 'group' && overData?.type === 'section') {
-      const groupId = active.id as string;
-      const targetSectionId = over.id as string;
-
-      setSections(prevSections => {
-        // Find the group and its current section
-        let groupToMove: RuleGroup | undefined;
-        let sourceSectionId: string | undefined;
-
-        for (const section of prevSections) {
-          const item = section.items.find(i => isRuleGroup(i) && i.id === groupId);
-          if (item && isRuleGroup(item)) {
-            groupToMove = item;
-            sourceSectionId = section.id;
-            break;
-          }
-        }
-
-        if (!groupToMove || !sourceSectionId || sourceSectionId === targetSectionId) {
-          return prevSections;
-        }
-
-        // Remove from source section and add to target section
-        return prevSections.map(section => {
-          if (section.id === sourceSectionId) {
-            return {
-              ...section,
-              items: section.items.filter(i => !(isRuleGroup(i) && i.id === groupId)),
-            };
-          } else if (section.id === targetSectionId) {
-            return {
-              ...section,
-              items: [...section.items, groupToMove],
-            };
-          }
-          return section;
-        });
-      });
-
-      console.log('Moved group:', groupId, 'to section:', targetSectionId);
-    }
-
-    // Scenario 4: Dragging a property from library to a ghost section (create section + add rule)
-    if (activeData?.dragType === 'property' && overData?.type === 'ghost-section') {
-      const propertyRef = activeData as PropertyReference;
-      const sectionId = over.id as string;
-
-      // Find the parent item to get all properties for the dropdown
-      const parentItem = propertyRef.type === 'fact'
-        ? schema?.facts.find(f => f.id === propertyRef.parentId)
-        : schema?.engagements.find(e => e.id === propertyRef.parentId);
-
-      if (!parentItem) return;
-
-      // Create a minimal rule with the property selected
-      const newRule: AddedRule = {
-        id: `rule-${Date.now()}`,
-        propertyId: propertyRef.property.id,
-        propertyName: propertyRef.property.name,
-        parentName: propertyRef.parentName,
-        properties: parentItem.properties,
-      };
-
-      // Add rule to the ghost section (which activates it)
-      setSections(prevSections =>
-        prevSections.map(section =>
-          section.id === sectionId
-            ? { ...section, items: [newRule] }
-            : section
-        )
-      );
-
-      console.log('Created section and rule from library drag:', newRule, 'in section:', sectionId);
-    }
-
-    // Scenario 5: Moving a rule to a ghost section (create section + move rule)
-    if (activeData?.dragType === 'rule' && overData?.type === 'ghost-section') {
-      const ruleId = active.id as string;
-      const targetSectionId = over.id as string;
-
-      setSections(prevSections => {
-        // Find the rule and its current section
-        let ruleToMove: AddedRule | undefined;
-        let sourceSectionId: string | undefined;
-
-        for (const section of prevSections) {
-          const item = section.items.find(i => !isRuleGroup(i) && i.id === ruleId);
-          if (item && !isRuleGroup(item)) {
-            ruleToMove = item;
-            sourceSectionId = section.id;
-            break;
-          }
-        }
-
-        if (!ruleToMove || !sourceSectionId) {
-          return prevSections;
-        }
-
-        // Remove from source section and add to ghost section (activating it)
-        return prevSections.map(section => {
-          if (section.id === sourceSectionId) {
-            return {
-              ...section,
-              items: section.items.filter(i => !((!isRuleGroup(i)) && i.id === ruleId)),
-            };
-          } else if (section.id === targetSectionId) {
-            return {
-              ...section,
-              items: [ruleToMove], // Ghost section starts with this rule
-            };
-          }
-          return section;
-        });
-      });
-
-      console.log('Created section and moved rule:', ruleId, 'to section:', targetSectionId);
-    }
-  };
-
   if (!schema) {
     return (
       <Box p={6}>
@@ -1277,6 +875,16 @@ function AudienceBuilderPage() {
 
   const reachedGoals = 0; // TODO: Calculate based on goals section
 
+  // Separate entry section items into facts and engagements
+  const entrySection = sections.find(s => s.id === 'entry');
+  const entryFacts = entrySection?.items.filter(item =>
+    !isRuleGroup(item) && schema && isFactItem(item, schema)
+  ) || [];
+  const entryEngagements = entrySection?.items.filter(item =>
+    !isRuleGroup(item) && schema && !isFactItem(item, schema)
+  ) || [];
+  const shouldSplitEntry = entryFacts.length > 0 && entryEngagements.length > 0;
+
   // Check if we have any COMPLETE rules (property + operator + value)
   const hasCompleteRule = sections.some(section =>
     section.items.some(item => {
@@ -1292,39 +900,19 @@ function AudienceBuilderPage() {
     })
   );
 
-  // Custom drop animation for better visual feedback
-  const dropAnimation: DropAnimation = {
-    duration: 200,
-    easing: 'ease-out',
-    sideEffects: defaultDropAnimationSideEffects({
-      styles: {
-        active: {
-          opacity: '0.5',
-        },
-      },
-    }),
-  };
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={pointerWithin}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <Box bg="#fbfbfb" height="100vh" overflow="hidden">
+    <Box bg="#fbfbfb" height="100vh" overflow="hidden">
         {/* Fixed Header */}
         <EditorHeader
           audienceName={audienceName}
           status={audienceStatus}
           hasUnsavedChanges={hasUnsavedChanges}
-          isViewMode={viewMode === 'view'}
+          activeTab={activeTab}
           hasCompleteRule={hasCompleteRule}
           onNameChange={setAudienceName}
           onSave={handleSave}
           onPublish={handlePublish}
-          onAnalyze={handleAnalyzeAudience}
-          onEdit={handleEdit}
+          onTabChange={handleTabChange}
           lastModified="Just now"
           hasHistoricalData={hasHistoricalData}
           isLoadingData={isLoadingData}
@@ -1332,14 +920,14 @@ function AudienceBuilderPage() {
           onUnpublish={handleUnpublish}
         />
 
-        {/* Main Layout: Conditional based on view mode */}
+        {/* Main Layout: Conditional based on active tab */}
         <Flex
           pt="60px"
           height="100vh"
         >
-          {viewMode === 'edit' ? (
+          {activeTab !== 'analyze' ? (
             <>
-              {/* EDIT MODE LAYOUT */}
+              {/* DEFINE / SYNC TABS LAYOUT */}
 
               {/* Toolbar - Hidden for now, keep code for potential future use */}
               {/* <Toolbar
@@ -1372,6 +960,10 @@ function AudienceBuilderPage() {
                   focusSectionId={focusSectionId}
                   activatedSections={activatedSections}
                   activeSectionId={activeSectionId}
+                  activeTab={activeTab}
+                  shouldSplitEntry={shouldSplitEntry}
+                  entryFacts={entryFacts as AddedRule[]}
+                  entryEngagements={entryEngagements as AddedRule[]}
                   syncDestinations={syncDestinations}
                   experimentMode={experimentMode}
                   isDestinationModalOpen={isDestinationModalOpen}
@@ -1428,7 +1020,7 @@ function AudienceBuilderPage() {
             </>
           ) : (
             <>
-              {/* VIEW MODE LAYOUT */}
+              {/* ANALYZE TAB LAYOUT */}
 
               {/* Left: Dashboard */}
               <Box flex="1" display="flex" justifyContent="center" pt={2} px={6} pb={6}>
@@ -1463,28 +1055,6 @@ function AudienceBuilderPage() {
           )}
         </Flex>
 
-        {/* Drag Overlay - shows dragged item */}
-        <DragOverlay dropAnimation={dropAnimation}>
-          {activeId && activeDragItem ? (
-            <Box
-              px={3}
-              py={2}
-              bg="blue.500"
-              color="white"
-              borderRadius="md"
-              opacity={0.9}
-              fontSize="sm"
-            >
-              {('property' in activeDragItem)
-                ? activeDragItem.property.name
-                : isRuleGroup(activeDragItem)
-                  ? (activeDragItem.name || 'Unnamed Group')
-                  : activeDragItem.propertyName
-              }
-            </Box>
-          ) : null}
-        </DragOverlay>
-
         {/* Historical Data Modal */}
         <HistoricalDataModal
           isOpen={isHistoricalDataModalOpen}
@@ -1492,7 +1062,6 @@ function AudienceBuilderPage() {
           onLoadData={handleLoadHistoricalData}
         />
       </Box>
-    </DndContext>
   );
 }
 

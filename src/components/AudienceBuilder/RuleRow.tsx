@@ -2,11 +2,8 @@ import { Box, Input, IconButton, Text, Flex, Button } from '@chakra-ui/react'
 import { Menu } from '@chakra-ui/react'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import { useState, useMemo, ChangeEvent } from 'react'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import type { PropertyDefinition } from '../../types/schema'
 import type { ComparisonOperator, DateOperator } from '../../types/query'
 
@@ -79,7 +76,7 @@ const getOperatorsForType = (dataType: string): Array<{ value: ComparisonOperato
 }
 
 export function RuleRow({
-  ruleId,
+  ruleId: _ruleId,
   ruleName,
   properties,
   preSelectedProperty,
@@ -107,28 +104,6 @@ export function RuleRow({
   const [commentText, setCommentText] = useState(comment || '')
   const [isEditingVariable, setIsEditingVariable] = useState(false)
   const [variableText, setVariableText] = useState(trackVariable || '')
-
-  // Set up sortable
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: ruleId,
-    data: {
-      dragType: 'rule',
-      ruleId,
-    },
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
 
   // Get the currently selected property definition
   const currentProperty = useMemo(() => {
@@ -196,8 +171,6 @@ export function RuleRow({
 
   return (
     <Box
-      ref={setNodeRef}
-      style={style}
       borderBottom="1px solid"
       borderColor="gray.100"
       borderLeft={isSelected ? '3px solid' : undefined}
@@ -226,22 +199,6 @@ export function RuleRow({
               cursor: 'pointer',
             }}
           />
-        )}
-
-        {/* Drag handle - hide in selection mode */}
-        {!isInSelectionMode && (
-          <Box
-            {...attributes}
-            {...listeners}
-            cursor="grab"
-            display="flex"
-            alignItems="center"
-            color="gray.400"
-            _hover={{ color: 'gray.600' }}
-            style={{ touchAction: 'none' }}
-          >
-            <DragIndicatorIcon fontSize="small" />
-          </Box>
         )}
 
         {/* Property name */}

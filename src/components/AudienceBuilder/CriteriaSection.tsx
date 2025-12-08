@@ -2,8 +2,6 @@ import { Box, Flex, Text, Button } from '@chakra-ui/react';
 import { Menu } from '@chakra-ui/react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { RuleRow } from './RuleRow';
 import { RuleGroup } from './RuleGroup';
 import { CriteriaSearchInput } from './CriteriaSearchInput';
@@ -54,6 +52,7 @@ interface CriteriaSectionProps {
   isActive?: boolean;
   isInSelectionMode?: boolean;
   selectedRuleIds?: Set<string>;
+  isEngagementsOnly?: boolean;
   facts: FactDefinition[];
   engagements: EngagementDefinition[];
   onMatchTypeChange: (matchType: MatchType) => void;
@@ -98,6 +97,7 @@ export const CriteriaSection = ({
   isActive = false,
   isInSelectionMode = false,
   selectedRuleIds = new Set(),
+  isEngagementsOnly = false,
   facts,
   engagements,
   onMatchTypeChange,
@@ -123,25 +123,15 @@ export const CriteriaSection = ({
   // Extract only AddedRule items for display count (not groups)
   const rules = items.filter(item => !isRuleGroup(item)) as AddedRule[];
 
-  // Set up droppable for this section
-  const { setNodeRef, isOver } = useDroppable({
-    id: sectionId,
-    data: {
-      type: 'section',
-      sectionId,
-    },
-  });
-
   return (
     <Box
-      ref={setNodeRef}
       bg="white"
       borderRadius="lg"
       border="1px solid"
-      borderColor={isActive ? 'blue.500' : (isOver ? 'blue.400' : 'gray.200')}
+      borderColor={isActive ? 'blue.500' : 'gray.200'}
       overflow="hidden"
       mb={4}
-      boxShadow={isActive ? '0 0 0 3px rgba(66, 153, 225, 0.15)' : (isOver ? 'lg' : 'none')}
+      boxShadow={isActive ? '0 0 0 3px rgba(66, 153, 225, 0.15)' : 'none'}
       transition="all 0.2s"
       cursor="pointer"
       onClick={onSetActive}
@@ -290,11 +280,7 @@ export const CriteriaSection = ({
 
           {/* Items list (rules + groups) */}
           {items.length > 0 && (
-            <SortableContext
-              items={items.map(item => item.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <Box>
+            <Box>
                 {items.map((item) => {
                   // Render group
                   if (isRuleGroup(item)) {
@@ -348,8 +334,7 @@ export const CriteriaSection = ({
                     />
                   );
                 })}
-              </Box>
-            </SortableContext>
+            </Box>
           )}
 
           {/* Add criteria input */}
@@ -358,6 +343,7 @@ export const CriteriaSection = ({
             sectionId={sectionId}
             facts={facts}
             engagements={engagements}
+            isEngagementsOnly={isEngagementsOnly}
             shouldFocus={shouldFocusInput}
             hasAnyRules={rules.length > 0}
             onAddProperty={onAddProperty}
