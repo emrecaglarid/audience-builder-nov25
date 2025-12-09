@@ -129,7 +129,7 @@ export const CriteriaSection = ({
       borderRadius="lg"
       border="1px solid"
       borderColor={isActive ? 'blue.500' : 'gray.200'}
-      overflow="hidden"
+      overflow="visible"
       mb={4}
       boxShadow={isActive ? '0 0 0 3px rgba(66, 153, 225, 0.15)' : 'none'}
       transition="all 0.2s"
@@ -205,38 +205,40 @@ export const CriteriaSection = ({
               </Menu.Root>
             )}
 
-            {/* Time period dropdown */}
-            <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
-              <Menu.Trigger asChild>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  colorScheme="blue"
-                >
-                  {TIME_PERIOD_LABELS[timePeriod]}
-                  <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
-                </Button>
-              </Menu.Trigger>
-              <Menu.Positioner>
-                <Menu.Content>
-                  <Menu.Item value="last7days" onClick={() => onTimePeriodChange('last7days')}>
-                    in the last 7 days
-                  </Menu.Item>
-                  <Menu.Item value="last30days" onClick={() => onTimePeriodChange('last30days')}>
-                    in the last 30 days
-                  </Menu.Item>
-                  <Menu.Item value="last90days" onClick={() => onTimePeriodChange('last90days')}>
-                    in the last 90 days
-                  </Menu.Item>
-                  <Menu.Item value="lastYear" onClick={() => onTimePeriodChange('lastYear')}>
-                    in the last year
-                  </Menu.Item>
-                  <Menu.Item value="allTime" onClick={() => onTimePeriodChange('allTime')}>
-                    all time
-                  </Menu.Item>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Menu.Root>
+            {/* Time period dropdown - only for engagements-only sections OR non-entry sections */}
+            {(isEngagementsOnly || sectionId !== 'entry') && (
+              <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
+                <Menu.Trigger asChild>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    colorScheme="blue"
+                  >
+                    {TIME_PERIOD_LABELS[timePeriod]}
+                    <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
+                  </Button>
+                </Menu.Trigger>
+                <Menu.Positioner>
+                  <Menu.Content>
+                    <Menu.Item value="last7days" onClick={() => onTimePeriodChange('last7days')}>
+                      in the last 7 days
+                    </Menu.Item>
+                    <Menu.Item value="last30days" onClick={() => onTimePeriodChange('last30days')}>
+                      in the last 30 days
+                    </Menu.Item>
+                    <Menu.Item value="last90days" onClick={() => onTimePeriodChange('last90days')}>
+                      in the last 90 days
+                    </Menu.Item>
+                    <Menu.Item value="lastYear" onClick={() => onTimePeriodChange('lastYear')}>
+                      in the last year
+                    </Menu.Item>
+                    <Menu.Item value="allTime" onClick={() => onTimePeriodChange('allTime')}>
+                      all time
+                    </Menu.Item>
+                  </Menu.Content>
+                </Menu.Positioner>
+              </Menu.Root>
+            )}
           </Flex>
         )}
       </Flex>

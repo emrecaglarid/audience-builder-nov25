@@ -1,8 +1,13 @@
 import { Box, Text, VStack, Flex, Button } from '@chakra-ui/react';
+import { Menu } from '@chakra-ui/react';
 import AddIcon from '@mui/icons-material/Add';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useState } from 'react';
 import { CriteriaSection, MatchType, TimePeriod, type AddedRule, type RuleGroup } from './CriteriaSection';
+import { CriteriaSearchInput } from './CriteriaSearchInput';
+import { RuleRow } from './RuleRow';
 import { SyncSection } from './SyncSection';
+import { DestinationPickerModal } from './DestinationPickerModal';
 import type { FactDefinition, EngagementDefinition } from '../../types/schema';
 import type { PropertyMatch } from './PropertyDropdown';
 import type { AISuggestion } from './aiSuggestions';
@@ -100,7 +105,10 @@ const GhostSection = ({ sectionId, title, description, onAddSection }: GhostSect
       px={4}
       py={3}
       cursor="pointer"
-      onClick={() => onAddSection(sectionId)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onAddSection(sectionId);
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       _hover={{ bg: 'gray.50' }}
@@ -200,7 +208,7 @@ export const Canvas = ({
                 borderRadius="lg"
                 border="1px solid"
                 borderColor="gray.200"
-                overflow="hidden"
+                overflow="visible"
                 mb={4}
               >
                 {/* Main Entry Header */}
@@ -222,12 +230,50 @@ export const Canvas = ({
                     <Text fontSize="sm" fontWeight="semibold" color="gray.600">
                       Facts
                     </Text>
-                    <Button size="xs" variant="ghost" colorScheme="blue">
-                      {section.matchType === 'all' ? 'all' : 'any'}
-                    </Button>
+                    {entryFacts.length >= 2 && (
+                      <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
+                        <Menu.Trigger asChild>
+                          <Button size="xs" variant="ghost" colorScheme="blue">
+                            {section.matchType === 'all' ? 'all the rules below match' : 'any of the rules below match'}
+                            <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
+                          </Button>
+                        </Menu.Trigger>
+                        <Menu.Positioner>
+                          <Menu.Content>
+                            <Menu.Item value="all" onClick={() => onSectionMatchTypeChange(section.id, 'all')}>
+                              all the rules below match
+                            </Menu.Item>
+                            <Menu.Item value="any" onClick={() => onSectionMatchTypeChange(section.id, 'any')}>
+                              any of the rules below match
+                            </Menu.Item>
+                          </Menu.Content>
+                        </Menu.Positioner>
+                      </Menu.Root>
+                    )}
                   </Flex>
                   {entryFacts.map((rule) => (
-                    <div key={rule.id}>Rule: {rule.propertyName}</div>
+                    <RuleRow
+                      key={rule.id}
+                      ruleId={rule.id}
+                      ruleName={rule.propertyName}
+                      parentName={rule.parentName}
+                      properties={rule.properties}
+                      preSelectedProperty={rule.propertyId}
+                      excluded={rule.excluded}
+                      disabled={rule.disabled}
+                      comment={rule.comment}
+                      trackVariable={rule.trackVariable}
+                      sectionId="entry"
+                      isInSelectionMode={false}
+                      isSelected={false}
+                      onDelete={() => onRuleDelete('entry', rule.id)}
+                      onChange={(data) => onRuleChange('entry', rule.id, data)}
+                      onToggleExcluded={() => onRuleToggleExcluded('entry', rule.id)}
+                      onToggleDisabled={() => onRuleToggleDisabled('entry', rule.id)}
+                      onCommentChange={(comment) => onRuleCommentChange('entry', rule.id, comment)}
+                      onTrackVariableChange={(variable) => onRuleTrackVariableChange('entry', rule.id, variable)}
+                      onToggleSelection={() => {}}
+                    />
                   ))}
                 </Box>
 
@@ -238,18 +284,95 @@ export const Canvas = ({
                       Engagements
                     </Text>
                     <Flex align="center" gap={2}>
-                      <Button size="xs" variant="ghost" colorScheme="blue">
-                        {section.matchType === 'any' ? 'any' : 'all'}
-                      </Button>
-                      <Button size="xs" variant="ghost" colorScheme="blue">
-                        {TIME_PERIOD_LABELS[section.timePeriod]}
-                      </Button>
+                      {entryEngagements.length >= 2 && (
+                        <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
+                          <Menu.Trigger asChild>
+                            <Button size="xs" variant="ghost" colorScheme="blue">
+                              {section.matchType === 'all' ? 'all the rules below match' : 'any of the rules below match'}
+                              <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
+                            </Button>
+                          </Menu.Trigger>
+                          <Menu.Positioner>
+                            <Menu.Content>
+                              <Menu.Item value="all" onClick={() => onSectionMatchTypeChange(section.id, 'all')}>
+                                all the rules below match
+                              </Menu.Item>
+                              <Menu.Item value="any" onClick={() => onSectionMatchTypeChange(section.id, 'any')}>
+                                any of the rules below match
+                              </Menu.Item>
+                            </Menu.Content>
+                          </Menu.Positioner>
+                        </Menu.Root>
+                      )}
+                      {entryEngagements.length > 0 && (
+                        <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
+                          <Menu.Trigger asChild>
+                            <Button size="xs" variant="ghost" colorScheme="blue">
+                              {TIME_PERIOD_LABELS[section.timePeriod]}
+                              <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
+                            </Button>
+                          </Menu.Trigger>
+                          <Menu.Positioner>
+                            <Menu.Content>
+                              <Menu.Item value="last7days" onClick={() => onSectionTimePeriodChange(section.id, 'last7days')}>
+                                in the last 7 days
+                              </Menu.Item>
+                              <Menu.Item value="last30days" onClick={() => onSectionTimePeriodChange(section.id, 'last30days')}>
+                                in the last 30 days
+                              </Menu.Item>
+                              <Menu.Item value="last90days" onClick={() => onSectionTimePeriodChange(section.id, 'last90days')}>
+                                in the last 90 days
+                              </Menu.Item>
+                              <Menu.Item value="lastYear" onClick={() => onSectionTimePeriodChange(section.id, 'lastYear')}>
+                                in the last year
+                              </Menu.Item>
+                              <Menu.Item value="allTime" onClick={() => onSectionTimePeriodChange(section.id, 'allTime')}>
+                                all time
+                              </Menu.Item>
+                            </Menu.Content>
+                          </Menu.Positioner>
+                        </Menu.Root>
+                      )}
                     </Flex>
                   </Flex>
                   {entryEngagements.map((rule) => (
-                    <div key={rule.id}>Rule: {rule.propertyName}</div>
+                    <RuleRow
+                      key={rule.id}
+                      ruleId={rule.id}
+                      ruleName={rule.propertyName}
+                      parentName={rule.parentName}
+                      properties={rule.properties}
+                      preSelectedProperty={rule.propertyId}
+                      excluded={rule.excluded}
+                      disabled={rule.disabled}
+                      comment={rule.comment}
+                      trackVariable={rule.trackVariable}
+                      sectionId="entry"
+                      isInSelectionMode={false}
+                      isSelected={false}
+                      onDelete={() => onRuleDelete('entry', rule.id)}
+                      onChange={(data) => onRuleChange('entry', rule.id, data)}
+                      onToggleExcluded={() => onRuleToggleExcluded('entry', rule.id)}
+                      onToggleDisabled={() => onRuleToggleDisabled('entry', rule.id)}
+                      onCommentChange={(comment) => onRuleCommentChange('entry', rule.id, comment)}
+                      onTrackVariableChange={(variable) => onRuleTrackVariableChange('entry', rule.id, variable)}
+                      onToggleSelection={() => {}}
+                    />
                   ))}
                 </Box>
+
+                {/* Add criteria input - shared for both Facts and Engagements */}
+                <CriteriaSearchInput
+                  sectionTitle="Enter audience if"
+                  sectionId="entry"
+                  facts={facts}
+                  engagements={engagements}
+                  isEngagementsOnly={false}
+                  shouldFocus={focusSectionId === 'entry'}
+                  hasAnyRules={entryFacts.length > 0 || entryEngagements.length > 0}
+                  onAddProperty={(match) => onAddProperty('entry', match)}
+                  onAddAISuggestions={(suggestions) => onAddAISuggestions('entry', suggestions)}
+                />
               </Box>
             );
           }
@@ -263,10 +386,8 @@ export const Canvas = ({
                   key={section.id}
                   destinations={syncDestinations}
                   experimentMode={experimentMode}
-                  isCollapsed={section.isCollapsed}
                   isModalOpen={isDestinationModalOpen}
                   isActive={activeSectionId === section.id}
-                  onToggleCollapse={() => onSectionToggleCollapse(section.id)}
                   onSetActive={() => onSetActiveSection(section.id)}
                   onOpenModal={onOpenDestinationModal}
                   onCloseModal={onCloseDestinationModal}
@@ -282,7 +403,29 @@ export const Canvas = ({
               );
             }
 
-            // Show ghost state after first rule is added
+            // On Sync tab: show ghost section immediately when empty
+            if (activeTab === 'sync') {
+              return (
+                <>
+                  <GhostSection
+                    key={section.id}
+                    sectionId={section.id}
+                    title="Add destination"
+                    description="Connect to destinations and activation platforms"
+                    onAddSection={onOpenDestinationModal}
+                  />
+                  {/* Destination Picker Modal - must be rendered even with ghost section */}
+                  <DestinationPickerModal
+                    isOpen={isDestinationModalOpen}
+                    onClose={onCloseDestinationModal}
+                    onSelect={onSelectDestination}
+                    excludeIds={syncDestinations.map(d => d.id)}
+                  />
+                </>
+              );
+            }
+
+            // On Define tab: show ghost state after first rule is added
             if (hasAnyRules) {
               return (
                 <GhostSection

@@ -1,6 +1,4 @@
 import { Box, Button, Text, Flex } from '@chakra-ui/react'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AddIcon from '@mui/icons-material/Add'
 import { useState, useRef } from 'react'
 import { DestinationRow } from './DestinationRow'
@@ -146,10 +144,8 @@ function TrafficSplitSlider({ destinations, onPercentageChange }: TrafficSplitSl
 interface SyncSectionProps {
   destinations: AddedDestination[]
   experimentMode: boolean
-  isCollapsed?: boolean
   isModalOpen: boolean
   isActive?: boolean
-  onToggleCollapse?: () => void
   onSetActive?: () => void
   onOpenModal: () => void
   onCloseModal: () => void
@@ -166,10 +162,8 @@ interface SyncSectionProps {
 export function SyncSection({
   destinations,
   experimentMode,
-  isCollapsed = false,
   isModalOpen,
   isActive = false,
-  onToggleCollapse,
   onSetActive,
   onOpenModal,
   onCloseModal,
@@ -206,21 +200,11 @@ export function SyncSection({
           justify="space-between"
           px={4}
           py={3}
-          borderBottom={!isCollapsed && destinations.length > 0 ? '1px solid' : 'none'}
+          borderBottom={destinations.length > 0 ? '1px solid' : 'none'}
           borderColor="gray.200"
-          cursor="pointer"
-          onClick={onToggleCollapse}
-          _hover={{ bg: 'gray.50' }}
         >
-          {/* Left side: Collapse icon + Title */}
+          {/* Left side: Title */}
           <Flex align="center" gap={2}>
-            {/* Collapse icon */}
-            {isCollapsed ? (
-              <ChevronRightIcon fontSize="small" style={{ color: '#718096' }} />
-            ) : (
-              <ExpandMoreIcon fontSize="small" style={{ color: '#718096' }} />
-            )}
-
             {/* Title */}
             <Text fontSize="md" fontWeight="semibold" color="gray.700">
               Sync and activation
@@ -243,7 +227,7 @@ export function SyncSection({
           </Flex>
 
           {/* Right side: Experiment toggle (when 2+ destinations) */}
-          {!isCollapsed && destinations.length >= 2 && (
+          {destinations.length >= 2 && (
             <Flex align="center" gap={2} onClick={(e) => e.stopPropagation()}>
               <Text fontSize="xs" color="gray.600">
                 Experiment
@@ -280,10 +264,9 @@ export function SyncSection({
         </Flex>
 
         {/* Section Content */}
-        {!isCollapsed && (
-          <>
-            {/* Experiment mode: Warning or Slider (same height to prevent layout shift) */}
-            {experimentMode && destinations.length > 0 && (
+        <>
+          {/* Experiment mode: Warning or Slider (same height to prevent layout shift) */}
+          {experimentMode && destinations.length > 0 && (
               <Box minH="48px">
                 {hasPercentageError ? (
                   <Box px={4} py={3} bg="orange.50" borderBottom="1px solid" borderColor="orange.200" minH="48px" display="flex" alignItems="center" justifyContent="space-between">
@@ -344,8 +327,7 @@ export function SyncSection({
                 Add destination
               </Button>
             </Box>
-          </>
-        )}
+        </>
       </Box>
 
       {/* Destination Picker Modal */}

@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
-import { Box, Flex, Text } from '@chakra-ui/react';
+import { Box, Flex, Text, Button } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
+import AddIcon from '@mui/icons-material/Add';
 import { getAudience, saveAudience } from '../../services/audienceStorage';
 import { useApp } from '@/context/AppContext';
 import { PropertyReference } from '@/types';
@@ -18,6 +19,7 @@ import type { AddedDestination, Destination } from '../../types/destination';
 import { AudienceSummary } from './ViewMode/AudienceSummary';
 import { Dashboard } from './ViewMode/Dashboard';
 import { HistoricalDataModal } from './ViewMode/HistoricalDataModal';
+import { DestinationSimulation } from './DestinationSimulation';
 
 interface SectionConfig {
   id: string;
@@ -46,7 +48,7 @@ function AudienceBuilderPage() {
   const [audienceStatus, setAudienceStatus] = useState<'draft' | 'published'>('draft');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [recentlyUsed, setRecentlyUsed] = useState<PropertyReference[]>([]);
-  const [activePane, setActivePane] = useState<ToolbarPane>('library');
+  const [activePane, setActivePane] = useState<ToolbarPane>(null);
   const [previewTimePeriod, setPreviewTimePeriod] = useState<PreviewTimePeriod>('last30days');
   const [focusSectionId, setFocusSectionId] = useState<string | null>(null);
   const [activatedSections, setActivatedSections] = useState<Set<string>>(new Set(['entry']));
@@ -935,8 +937,8 @@ function AudienceBuilderPage() {
                 onPaneChange={setActivePane}
               /> */}
 
-              {/* Library Pane - conditionally rendered */}
-              {activePane === 'library' && (
+              {/* Library Pane - conditionally rendered (hidden on Sync tab) */}
+              {activePane === 'library' && activeTab !== 'sync' && (
                 <Box pt={2} px={6} pb={6} display="flex" alignItems="flex-start">
                   <LibraryPane
                     facts={schema.facts}
@@ -952,59 +954,81 @@ function AudienceBuilderPage() {
               )}
 
               {/* Main Content Area - Canvas */}
-              <Box flex="1" display="flex" justifyContent="center" pt={2} px={6} pb={6} overflowY="auto">
-                <Canvas
-                  sections={sections}
-                  facts={schema.facts}
-                  engagements={schema.engagements}
-                  focusSectionId={focusSectionId}
-                  activatedSections={activatedSections}
-                  activeSectionId={activeSectionId}
-                  activeTab={activeTab}
-                  shouldSplitEntry={shouldSplitEntry}
-                  entryFacts={entryFacts as AddedRule[]}
-                  entryEngagements={entryEngagements as AddedRule[]}
-                  syncDestinations={syncDestinations}
-                  experimentMode={experimentMode}
-                  isDestinationModalOpen={isDestinationModalOpen}
-                  sectionSelectionMode={sectionSelectionMode}
-                  sectionSelectedRules={sectionSelectedRules}
-                  onSectionMatchTypeChange={handleSectionMatchTypeChange}
-                  onSectionTimePeriodChange={handleSectionTimePeriodChange}
-                  onSectionToggleCollapse={handleSectionToggleCollapse}
-                  onRuleDelete={handleRuleDelete}
-                  onRuleAdd={handleRuleAdd}
-                  onRuleChange={handleRuleChange}
-                  onRuleToggleExcluded={handleRuleToggleExcluded}
-                  onRuleToggleDisabled={handleRuleToggleDisabled}
-                  onRuleCommentChange={handleRuleCommentChange}
-                  onRuleTrackVariableChange={handleRuleTrackVariableChange}
-                  onAddSection={handleAddSection}
-                  onSetActiveSection={handleSetActiveSection}
-                  onAddProperty={handleAddPropertyToSection}
-                  onAddAISuggestions={handleAddAISuggestionsToSection}
-                  onEnterSelectionMode={handleEnterSelectionMode}
-                  onExitSelectionMode={handleExitSelectionMode}
-                  onToggleRuleSelection={handleToggleRuleSelection}
-                  onGroupSelected={handleGroupSelected}
-                  onUngroupGroup={handleUngroupGroup}
-                  onGroupMatchTypeChange={handleGroupMatchTypeChange}
-                  onRenameGroup={handleRenameGroup}
-                  onOpenDestinationModal={() => setIsDestinationModalOpen(true)}
-                  onCloseDestinationModal={() => setIsDestinationModalOpen(false)}
-                  onSelectDestination={handleSelectDestination}
-                  onDestinationDelete={handleDestinationDelete}
-                  onDestinationTogglePaused={handleDestinationTogglePaused}
-                  onDestinationCommentChange={handleDestinationCommentChange}
-                  onDestinationPercentageChange={handleDestinationPercentageChange}
-                  onDestinationTargetAudienceChange={handleDestinationTargetAudienceChange}
-                  onExperimentToggle={handleExperimentToggle}
-                  onSplitEqually={handleSplitEqually}
-                />
-              </Box>
+              <Flex flex="1" pt={2} px={6} pb={6} overflowY="auto">
+                {/* Library Toggle Button - only show when library is closed */}
+                {activePane !== 'library' && (
+                  <Box width="56px" flexShrink={0} mr={2}>
+                    <Button
+                      size="md"
+                      variant="outline"
+                      colorScheme="gray"
+                      onClick={() => setActivePane('library')}
+                      width="40px"
+                      height="40px"
+                      minWidth="40px"
+                      padding={0}
+                      borderRadius="md"
+                    >
+                      <AddIcon fontSize="medium" />
+                    </Button>
+                  </Box>
+                )}
 
-              {/* Preview Pane - visible when at least one rule is fully configured */}
-              {hasCompleteRule && (
+                {/* Canvas container */}
+                <Box flex="1" display="flex" justifyContent="center">
+                  <Canvas
+                    sections={sections}
+                    facts={schema.facts}
+                    engagements={schema.engagements}
+                    focusSectionId={focusSectionId}
+                    activatedSections={activatedSections}
+                    activeSectionId={activeSectionId}
+                    activeTab={activeTab}
+                    shouldSplitEntry={shouldSplitEntry}
+                    entryFacts={entryFacts as AddedRule[]}
+                    entryEngagements={entryEngagements as AddedRule[]}
+                    syncDestinations={syncDestinations}
+                    experimentMode={experimentMode}
+                    isDestinationModalOpen={isDestinationModalOpen}
+                    sectionSelectionMode={sectionSelectionMode}
+                    sectionSelectedRules={sectionSelectedRules}
+                    onSectionMatchTypeChange={handleSectionMatchTypeChange}
+                    onSectionTimePeriodChange={handleSectionTimePeriodChange}
+                    onSectionToggleCollapse={handleSectionToggleCollapse}
+                    onRuleDelete={handleRuleDelete}
+                    onRuleAdd={handleRuleAdd}
+                    onRuleChange={handleRuleChange}
+                    onRuleToggleExcluded={handleRuleToggleExcluded}
+                    onRuleToggleDisabled={handleRuleToggleDisabled}
+                    onRuleCommentChange={handleRuleCommentChange}
+                    onRuleTrackVariableChange={handleRuleTrackVariableChange}
+                    onAddSection={handleAddSection}
+                    onSetActiveSection={handleSetActiveSection}
+                    onAddProperty={handleAddPropertyToSection}
+                    onAddAISuggestions={handleAddAISuggestionsToSection}
+                    onEnterSelectionMode={handleEnterSelectionMode}
+                    onExitSelectionMode={handleExitSelectionMode}
+                    onToggleRuleSelection={handleToggleRuleSelection}
+                    onGroupSelected={handleGroupSelected}
+                    onUngroupGroup={handleUngroupGroup}
+                    onGroupMatchTypeChange={handleGroupMatchTypeChange}
+                    onRenameGroup={handleRenameGroup}
+                    onOpenDestinationModal={() => setIsDestinationModalOpen(true)}
+                    onCloseDestinationModal={() => setIsDestinationModalOpen(false)}
+                    onSelectDestination={handleSelectDestination}
+                    onDestinationDelete={handleDestinationDelete}
+                    onDestinationTogglePaused={handleDestinationTogglePaused}
+                    onDestinationCommentChange={handleDestinationCommentChange}
+                    onDestinationPercentageChange={handleDestinationPercentageChange}
+                    onDestinationTargetAudienceChange={handleDestinationTargetAudienceChange}
+                    onExperimentToggle={handleExperimentToggle}
+                    onSplitEqually={handleSplitEqually}
+                  />
+                </Box>
+              </Flex>
+
+              {/* Right Pane - Different for Define vs Sync */}
+              {activeTab === 'define' && hasCompleteRule && (
                 <Box pt={2} px={6} pb={6} display="flex" alignItems="flex-start">
                   <PreviewPane
                     matchingProfiles={matchingProfiles}
@@ -1013,6 +1037,16 @@ function AudienceBuilderPage() {
                     onTimePeriodChange={setPreviewTimePeriod}
                     hasGoals={(sections.find(s => s.id === 'goals')?.items.length ?? 0) > 0}
                     hasExitConditions={(sections.find(s => s.id === 'exit')?.items.length ?? 0) > 0}
+                    isCalculating={isCalculating}
+                  />
+                </Box>
+              )}
+              {activeTab === 'sync' && (
+                <Box pt={2} px={6} pb={6} display="flex" alignItems="flex-start">
+                  <DestinationSimulation
+                    matchingProfiles={matchingProfiles}
+                    destinations={syncDestinations}
+                    experimentMode={experimentMode}
                     isCalculating={isCalculating}
                   />
                 </Box>

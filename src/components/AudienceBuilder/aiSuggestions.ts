@@ -650,10 +650,83 @@ export function getAISuggestions(
     };
   }
 
-  // No pattern matched - return helpful message
+  // No pattern matched - return random suggestions from available data
+  // Gather all available facts and engagements
+  const allAvailable: Array<{
+    type: 'fact' | 'engagement';
+    category: any;
+    property: PropertyDefinition;
+  }> = [];
+
+  facts.forEach(fact => {
+    fact.properties.forEach(prop => {
+      allAvailable.push({
+        type: 'fact',
+        category: fact,
+        property: prop,
+      });
+    });
+  });
+
+  engagements.forEach(engagement => {
+    engagement.properties.forEach(prop => {
+      allAvailable.push({
+        type: 'engagement',
+        category: engagement,
+        property: prop,
+      });
+    });
+  });
+
+  // If nothing available at all, return empty
+  if (allAvailable.length === 0) {
+    return {
+      suggestions: [],
+      explanation: "No properties available to suggest",
+    };
+  }
+
+  // Pick 1-2 random properties
+  const numSuggestions = Math.min(2, allAvailable.length);
+  const shuffled = [...allAvailable].sort(() => Math.random() - 0.5);
+  const selected = shuffled.slice(0, numSuggestions);
+
+  // Build suggestions with appropriate operators
+  const suggestions: AISuggestion[] = selected.map((item, index) => {
+    const prop = item.property;
+
+    // Pick an appropriate operator based on property type
+    let operator = 'equals';
+    let value: string | number | boolean = '';
+
+    if (prop.type === 'number') {
+      operator = 'greaterThanOrEqual';
+      value = 1;
+    } else if (prop.type === 'boolean') {
+      operator = 'isTrue';
+      value = true;
+    } else if (prop.type === 'date') {
+      operator = 'last30days';
+      value = '';
+    } else if (prop.type === 'string') {
+      operator = 'contains';
+      value = '';
+    }
+
+    return {
+      id: `ai-${Date.now()}-${index}`,
+      propertyId: prop.id,
+      propertyName: prop.name,
+      parentName: item.category.name,
+      operator,
+      value,
+      properties: item.category.properties,
+    };
+  });
+
   return {
-    suggestions: [],
-    explanation: "I don't recognize this pattern yet. Try prompts like: 'high value customers', 'new visitors', 'cart abandoners', 'made a purchase', 'engaged with content', 'inactive for 30+ days', or 'unsubscribed from emails'.",
+    explanation: 'AI-generated suggestions based on your input',
+    suggestions,
   };
 }
 
