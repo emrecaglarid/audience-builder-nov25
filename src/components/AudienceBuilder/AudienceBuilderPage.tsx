@@ -104,13 +104,6 @@ function AudienceBuilderPage() {
     }
   }, [id]);
 
-  // Auto-focus entry section input on page load
-  useEffect(() => {
-    setFocusSectionId('entry');
-    const timer = setTimeout(() => setFocusSectionId(null), 100);
-    return () => clearTimeout(timer);
-  }, []); // Empty deps - runs once on mount
-
   // Section state
   const [sections, setSections] = useState<SectionConfig[]>([
     {
