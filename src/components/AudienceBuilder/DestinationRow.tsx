@@ -16,7 +16,7 @@ interface DestinationRowProps {
   onDelete: () => void
   onTogglePaused?: () => void
   onCommentChange?: (comment: string) => void
-  onPercentageChange?: (percentage: number) => void
+  onPercentageChange?: (percentage: number, autoAdjust?: boolean) => void
   onTargetAudienceChange?: (audienceName: string) => void
 }
 
