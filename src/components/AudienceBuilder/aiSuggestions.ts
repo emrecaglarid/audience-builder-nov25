@@ -659,7 +659,7 @@ export function getAISuggestions(
   }> = [];
 
   facts.forEach(fact => {
-    fact.properties.forEach(prop => {
+    fact.properties.forEach((prop: PropertyDefinition) => {
       allAvailable.push({
         type: 'fact',
         category: fact,
@@ -669,7 +669,7 @@ export function getAISuggestions(
   });
 
   engagements.forEach(engagement => {
-    engagement.properties.forEach(prop => {
+    engagement.properties.forEach((prop: PropertyDefinition) => {
       allAvailable.push({
         type: 'engagement',
         category: engagement,
@@ -699,16 +699,16 @@ export function getAISuggestions(
     let operator = 'equals';
     let value: string | number | boolean = '';
 
-    if (prop.type === 'number') {
+    if (prop.dataType === 'number') {
       operator = 'greaterThanOrEqual';
       value = 1;
-    } else if (prop.type === 'boolean') {
+    } else if (prop.dataType === 'boolean') {
       operator = 'isTrue';
       value = true;
-    } else if (prop.type === 'date') {
+    } else if (prop.dataType === 'date') {
       operator = 'last30days';
       value = '';
-    } else if (prop.type === 'string') {
+    } else if (prop.dataType === 'string') {
       operator = 'contains';
       value = '';
     }
