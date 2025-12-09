@@ -51,26 +51,36 @@ export function HierarchicalBrowse({
         overflowY="auto"
         onMouseDown={(e) => e.preventDefault()}
       >
-        {allCategories.map((category, index) => (
-          <Flex
-            key={category.id}
-            align="center"
-            justify="space-between"
-            px={3}
-            py={2}
-            cursor="pointer"
-            bg={selectedIndex === index ? 'blue.50' : 'white'}
-            _hover={{ bg: 'blue.50' }}
-            onClick={() => onNavigate('properties', category)}
-            borderBottom={index < allCategories.length - 1 ? '1px solid' : 'none'}
-            borderColor="gray.100"
-          >
-            <Text fontSize="sm" fontWeight="medium" color="gray.800">
-              {category.name}
-            </Text>
-            <ChevronRightIcon fontSize="small" style={{ color: '#718096' }} />
-          </Flex>
-        ))}
+        {allCategories.map((category, index) => {
+          const isFact = facts.find(f => f.id === category.id);
+          const categoryType = isFact ? 'Fact' : 'Engagement';
+
+          return (
+            <Flex
+              key={category.id}
+              align="center"
+              justify="space-between"
+              px={3}
+              py={2}
+              cursor="pointer"
+              bg={selectedIndex === index ? 'blue.50' : 'white'}
+              _hover={{ bg: 'blue.50' }}
+              onClick={() => onNavigate('properties', category)}
+              borderBottom={index < allCategories.length - 1 ? '1px solid' : 'none'}
+              borderColor="gray.100"
+            >
+              <Box flex="1">
+                <Text fontSize="sm" fontWeight="medium" color="gray.800">
+                  {category.name}
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  {categoryType}
+                </Text>
+              </Box>
+              <ChevronRightIcon fontSize="small" style={{ color: '#718096' }} />
+            </Flex>
+          );
+        })}
       </Box>
     );
   }

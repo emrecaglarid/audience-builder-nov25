@@ -1,4 +1,4 @@
-import { Box, IconButton, Text, Flex, Input, VStack } from '@chakra-ui/react'
+import { Box, IconButton, Text, Flex, Input, VStack, Slider } from '@chakra-ui/react'
 import { Menu } from '@chakra-ui/react'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
@@ -89,30 +89,52 @@ export function DestinationRow({
           />
         </Box>
 
-        {/* Experiment mode: percentage input */}
+        {/* Experiment mode: percentage slider + editable input */}
         {experimentMode && (
-          <Box flex="0 0 80px">
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              value={destination.trafficPercentage || 0}
-              onChange={(e) => onPercentageChange?.(parseInt(e.target.value) || 0)}
-              size="sm"
-              textAlign="right"
-              pr="24px"
-            />
-            <Text
-              position="absolute"
-              right="8px"
-              top="50%"
-              transform="translateY(-50%)"
-              fontSize="xs"
-              color="gray.500"
-              pointerEvents="none"
-            >
-              %
-            </Text>
+          <Box flex="0 0 220px">
+            <Flex gap={2} align="center">
+              {/* Slider */}
+              <Box flex="1">
+                <Slider.Root
+                  min={0}
+                  max={100}
+                  step={10}
+                  value={[destination.trafficPercentage || 0]}
+                  onValueChange={(details) => onPercentageChange?.(details.value[0], true)}
+                  size="sm"
+                >
+                  <Slider.Track>
+                    <Slider.Range />
+                  </Slider.Track>
+                  <Slider.Thumb index={0} />
+                </Slider.Root>
+              </Box>
+
+              {/* Editable percentage input */}
+              <Box position="relative" width="70px">
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={destination.trafficPercentage || 0}
+                  onChange={(e) => onPercentageChange?.(parseInt(e.target.value) || 0, false)}
+                  size="sm"
+                  textAlign="right"
+                  pr="24px"
+                />
+                <Text
+                  position="absolute"
+                  right="8px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  fontSize="xs"
+                  color="gray.500"
+                  pointerEvents="none"
+                >
+                  %
+                </Text>
+              </Box>
+            </Flex>
           </Box>
         )}
 
