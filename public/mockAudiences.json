@@ -131,7 +131,14 @@
         "lastSyncStatus": "success",
         "lastSyncCount": 3421
       }
-    ]
+    ],
+    "metrics": {
+      "entered": 12450,
+      "active": 8320,
+      "exited": 3215,
+      "metGoals": 4102
+    },
+    "syncStatus": "healthy"
   },
   {
     "id": "audience_1732200000000",
@@ -330,7 +337,14 @@
         "lastSyncStatus": "success",
         "lastSyncCount": 8934
       }
-    ]
+    ],
+    "metrics": {
+      "entered": 8934,
+      "active": 5621,
+      "exited": 2103,
+      "metGoals": 1856
+    },
+    "syncStatus": "healthy"
   },
   {
     "id": "audience_1732400000000",
@@ -542,7 +556,14 @@
         "lastSyncStatus": "success",
         "lastSyncCount": 2156
       }
-    ]
+    ],
+    "metrics": {
+      "entered": 2156,
+      "active": 1842,
+      "exited": 314,
+      "metGoals": 523
+    },
+    "syncStatus": "warning"
   },
   {
     "id": "audience_1732600000000",
@@ -737,7 +758,14 @@
         "lastSyncStatus": "success",
         "lastSyncCount": 12451
       }
-    ]
+    ],
+    "metrics": {
+      "entered": 15230,
+      "active": 12451,
+      "exited": 2779,
+      "metGoals": 6847
+    },
+    "syncStatus": "healthy"
   },
   {
     "id": "audience_1732800000000",
@@ -950,7 +978,14 @@
         "trafficPercentage": 40
       }
     ],
-    "experimentMode": true
+    "experimentMode": true,
+    "metrics": {
+      "entered": 9368,
+      "active": 5621,
+      "exited": 1923,
+      "metGoals": 2341
+    },
+    "syncStatus": "error"
   },
   {
     "id": "audience_1733000000000",

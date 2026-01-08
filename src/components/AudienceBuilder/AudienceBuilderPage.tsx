@@ -628,16 +628,6 @@ function AudienceBuilderPage() {
   };
 
   const handleTabChange = (newTab: 'audience' | 'goals' | 'sync' | 'analyze') => {
-    // Prompt to save when leaving audience or goals tabs with unsaved changes
-    const isLeavingEditableTab = (activeTab === 'audience' || activeTab === 'goals') &&
-                                  (newTab !== 'audience' && newTab !== 'goals');
-    if (hasUnsavedChanges && isLeavingEditableTab) {
-      const confirmed = window.confirm('You have unsaved changes. Do you want to save before leaving?');
-      if (confirmed) {
-        handleSave();
-      }
-    }
-
     // Activate appropriate section and set as active when switching tabs
     if (newTab === 'goals') {
       setActivatedSections(prev => new Set([...prev, 'goals']));

@@ -1,9 +1,36 @@
-import { Box, Flex, Text, Button } from '@chakra-ui/react';
+import { Box, Flex, Text, Button, Table } from '@chakra-ui/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import AddIcon from '@mui/icons-material/Add';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { getAudiences, initializeWithMockData, type SavedAudience } from '../services/audienceStorage';
+import CircleIcon from '@mui/icons-material/Circle';
+import { getAudiences, initializeWithMockData, type SavedAudience, type SyncStatus } from '../services/audienceStorage';
+
+// Format large numbers with K suffix
+function formatNumber(num: number | undefined): string {
+  if (num === undefined) return '-';
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  }
+  return num.toString();
+}
+
+// Format date for display
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Get sync status color
+function getSyncStatusColor(status: SyncStatus | undefined, hasDestinations: boolean): string {
+  if (!hasDestinations) return '#A0AEC0'; // gray
+  switch (status) {
+    case 'healthy': return '#38A169'; // green
+    case 'warning': return '#D69E2E'; // yellow
+    case 'error': return '#E53E3E'; // red
+    case 'inactive': return '#A0AEC0'; // gray
+    default: return '#A0AEC0'; // gray
+  }
+}
 
 export function AudiencesListPage() {
   const navigate = useNavigate();
@@ -16,12 +43,16 @@ export function AudiencesListPage() {
       .then(() => {
         const loadedAudiences = getAudiences();
         console.log('Loaded audiences:', loadedAudiences.length);
+        // Sort by modifiedAt descending (most recent first)
+        loadedAudiences.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
         setAudiences(loadedAudiences);
       })
       .catch((error) => {
         console.error('Failed to initialize mock data:', error);
         // Try to load existing audiences anyway
-        setAudiences(getAudiences());
+        const fallback = getAudiences();
+        fallback.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
+        setAudiences(fallback);
       });
   }, [location.pathname]); // Re-run when pathname changes (e.g., back navigation)
 
@@ -57,26 +88,6 @@ export function AudiencesListPage() {
         borderColor="gray.200"
         overflow="hidden"
       >
-        {/* Table header */}
-        <Flex
-          px={4}
-          py={3}
-          borderBottom="1px solid"
-          borderColor="gray.200"
-          bg="gray.50"
-        >
-          <Text flex="1" fontSize="sm" fontWeight="semibold" color="gray.700">
-            Name
-          </Text>
-          <Text width="120px" fontSize="sm" fontWeight="semibold" color="gray.700">
-            Status
-          </Text>
-          <Text width="60px" fontSize="sm" fontWeight="semibold" color="gray.700">
-            {/* Actions */}
-          </Text>
-        </Flex>
-
-        {/* Table rows */}
         {audiences.length === 0 ? (
           <Box py={12} textAlign="center">
             <Text color="gray.500" mb={4}>
@@ -91,51 +102,83 @@ export function AudiencesListPage() {
             </Button>
           </Box>
         ) : (
-          audiences.map((audience) => (
-            <Flex
-              key={audience.id}
-              px={4}
-              py={4}
-              borderBottom="1px solid"
-              borderColor="gray.100"
-              cursor="pointer"
-              _hover={{ bg: 'gray.50' }}
-              transition="background 0.2s"
-              onClick={() => handleRowClick(audience.id)}
-              align="center"
-            >
-              {/* Name */}
-              <Box flex="1">
-                <Text fontSize="sm" fontWeight="medium">
-                  {audience.name}
-                </Text>
-                <Text fontSize="xs" color="gray.500">
-                  Modified {new Date(audience.modifiedAt).toLocaleDateString()}
-                </Text>
-              </Box>
-
-              {/* Status */}
-              <Box width="120px">
-                <Box
-                  display="inline-block"
-                  px={2}
-                  py={0.5}
-                  bg={audience.status === 'published' ? 'green.100' : 'gray.100'}
-                  color={audience.status === 'published' ? 'green.700' : 'gray.700'}
-                  borderRadius="md"
-                  fontSize="xs"
-                  fontWeight="medium"
-                >
-                  {audience.status === 'published' ? 'Published' : 'Draft'}
-                </Box>
-              </Box>
-
-              {/* Actions */}
-              <Box width="60px" display="flex" justifyContent="flex-end">
-                <ChevronRightIcon fontSize="small" style={{ color: '#718096' }} />
-              </Box>
-            </Flex>
-          ))
+          <Table.Root size="sm">
+            <Table.Header>
+              <Table.Row bg="gray.50">
+                <Table.ColumnHeader py={3} px={4} fontWeight="semibold" color="gray.600">Name</Table.ColumnHeader>
+                <Table.ColumnHeader py={3} px={4} fontWeight="semibold" color="gray.600">Status</Table.ColumnHeader>
+                <Table.ColumnHeader py={3} px={4} fontWeight="semibold" color="gray.600" textAlign="right">Entered</Table.ColumnHeader>
+                <Table.ColumnHeader py={3} px={4} fontWeight="semibold" color="gray.600" textAlign="right">Active</Table.ColumnHeader>
+                <Table.ColumnHeader py={3} px={4} fontWeight="semibold" color="gray.600" textAlign="right">Exited</Table.ColumnHeader>
+                <Table.ColumnHeader py={3} px={4} fontWeight="semibold" color="gray.600" textAlign="right">Met Goals</Table.ColumnHeader>
+                <Table.ColumnHeader py={3} px={4} fontWeight="semibold" color="gray.600" textAlign="center">Sync</Table.ColumnHeader>
+                <Table.ColumnHeader py={3} px={4} fontWeight="semibold" color="gray.600">Last Modified</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {audiences.map((audience) => {
+                const hasDestinations = (audience.syncDestinations?.length ?? 0) > 0;
+                return (
+                  <Table.Row
+                    key={audience.id}
+                    _hover={{ bg: 'gray.50', cursor: 'pointer' }}
+                    onClick={() => handleRowClick(audience.id)}
+                  >
+                    <Table.Cell py={3} px={4}>
+                      <Text fontWeight="medium" color="gray.800">{audience.name}</Text>
+                    </Table.Cell>
+                    <Table.Cell py={3} px={4}>
+                      <Box
+                        display="inline-block"
+                        px={2}
+                        py={0.5}
+                        bg={audience.status === 'published' ? 'green.100' : 'gray.100'}
+                        color={audience.status === 'published' ? 'green.700' : 'gray.700'}
+                        borderRadius="full"
+                        fontSize="xs"
+                        fontWeight="medium"
+                      >
+                        {audience.status === 'published' ? 'Published' : 'Draft'}
+                      </Box>
+                    </Table.Cell>
+                    <Table.Cell py={3} px={4} textAlign="right">
+                      <Text color={audience.metrics?.entered ? 'gray.800' : 'gray.400'}>
+                        {formatNumber(audience.metrics?.entered)}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell py={3} px={4} textAlign="right">
+                      <Text color={audience.metrics?.active ? 'gray.800' : 'gray.400'}>
+                        {formatNumber(audience.metrics?.active)}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell py={3} px={4} textAlign="right">
+                      <Text color={audience.metrics?.exited ? 'gray.800' : 'gray.400'}>
+                        {formatNumber(audience.metrics?.exited)}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell py={3} px={4} textAlign="right">
+                      <Text color={audience.metrics?.metGoals ? 'gray.800' : 'gray.400'}>
+                        {formatNumber(audience.metrics?.metGoals)}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell py={3} px={4} textAlign="center">
+                      <CircleIcon
+                        style={{
+                          fontSize: '10px',
+                          color: getSyncStatusColor(audience.syncStatus, hasDestinations)
+                        }}
+                      />
+                    </Table.Cell>
+                    <Table.Cell py={3} px={4}>
+                      <Text color="gray.600" fontSize="sm">
+                        {formatDate(audience.modifiedAt)}
+                      </Text>
+                    </Table.Cell>
+                  </Table.Row>
+                );
+              })}
+            </Table.Body>
+          </Table.Root>
         )}
       </Box>
     </Box>

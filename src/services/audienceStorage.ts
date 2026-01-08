@@ -35,6 +35,15 @@ export interface SavedAudienceSection {
   isCollapsed: boolean;
 }
 
+export interface AudienceMetrics {
+  entered: number;
+  active: number;
+  exited: number;
+  metGoals: number;
+}
+
+export type SyncStatus = 'healthy' | 'warning' | 'error' | 'inactive';
+
 export interface SavedAudience {
   id: string;
   name: string;
@@ -47,6 +56,8 @@ export interface SavedAudience {
   experimentMode?: boolean;
   hasHistoricalData?: boolean;
   historicalDataLoadedAt?: string;
+  metrics?: AudienceMetrics;
+  syncStatus?: SyncStatus;
 }
 
 const STORAGE_KEY = 'relay42_audiences';
