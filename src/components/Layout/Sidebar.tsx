@@ -117,11 +117,9 @@ export function Sidebar() {
       display="flex"
       flexDirection="column"
     >
-      {/* Logo */}
+      {/* Logo area */}
       <Flex align="center" px={4} py={4} borderBottom="1px solid" borderColor="gray.200">
-        <Text fontSize="lg" fontWeight="bold" color="purple.600">
-          Relay42
-        </Text>
+        {/* Empty - brand removed */}
       </Flex>
 
       {/* Navigation */}
