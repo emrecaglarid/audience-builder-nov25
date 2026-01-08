@@ -1,16 +1,12 @@
 import { Box, Flex, Text, Button } from '@chakra-ui/react';
-import { Menu } from '@chakra-ui/react';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { RuleRow } from './RuleRow';
 import { RuleGroup } from './RuleGroup';
-import { CriteriaSearchInput } from './CriteriaSearchInput';
 import type { PropertyDefinition, FactDefinition, EngagementDefinition } from '../../types/schema';
-import type { PropertyMatch } from './PropertyDropdown';
-import type { AISuggestion } from './aiSuggestions';
 
 export type MatchType = 'all' | 'any';
-export type TimePeriod = 'last7days' | 'last30days' | 'last90days' | 'lastYear' | 'allTime' | 'customRange';
+export type TimePeriod = 'last7days' | 'last30days' | 'last90days' | 'lastYear' | 'allTime' | 'customRange' | 'perRule';
 
 export interface AddedRule {
   id: string;
@@ -25,6 +21,7 @@ export interface AddedRule {
   disabled?: boolean;
   comment?: string;
   trackVariable?: string;
+  timePeriod?: TimePeriod; // Per-rule time period (when perRule mode is enabled)
 }
 
 export interface RuleGroup {
@@ -48,11 +45,13 @@ interface CriteriaSectionProps {
   matchType: MatchType;
   timePeriod: TimePeriod;
   isCollapsed?: boolean;
-  shouldFocusInput?: boolean;
   isActive?: boolean;
   isInSelectionMode?: boolean;
   selectedRuleIds?: Set<string>;
   isEngagementsOnly?: boolean;
+  showRuleCounts?: boolean;
+  ruleCounts?: Record<string, number>;
+  isReadOnly?: boolean; // Whether to render in read-only mode (no controls/actions)
   facts: FactDefinition[];
   engagements: EngagementDefinition[];
   onMatchTypeChange: (matchType: MatchType) => void;
@@ -64,65 +63,69 @@ interface CriteriaSectionProps {
   onRuleToggleDisabled: (ruleId: string) => void;
   onRuleCommentChange: (ruleId: string, comment: string) => void;
   onRuleTrackVariableChange: (ruleId: string, variable: string) => void;
-  onAddProperty: (match: PropertyMatch) => void;
-  onAddAISuggestions: (suggestions: AISuggestion[]) => void;
   onEnterSelectionMode: () => void;
   onExitSelectionMode: () => void;
   onToggleRuleSelection: (ruleId: string) => void;
   onGroupSelected: () => void;
   onUngroupGroup: (groupId: string) => void;
+  onDeleteGroup?: (groupId: string) => void;
   onGroupMatchTypeChange: (groupId: string, matchType: MatchType) => void;
   onRenameGroup: (groupId: string, name: string) => void;
+  onRuleTimePeriodChange?: (ruleId: string, timePeriod: TimePeriod) => void;
   onToggleCollapse?: () => void;
   onSetActive?: () => void;
 }
 
-const TIME_PERIOD_LABELS: Record<TimePeriod, string> = {
-  'last7days': 'in the last 7 days',
-  'last30days': 'in the last 30 days',
-  'last90days': 'in the last 90 days',
-  'lastYear': 'in the last year',
-  'allTime': 'all time',
-  'customRange': 'custom range',
+const SECTION_TITLES: Record<string, string> = {
+  'entry': 'Entry criteria',
+  'goals': 'Goal criteria',
+  'exit': 'Exit criteria',
 };
+
+// Helper to check if a rule is an engagement (vs a fact)
+function isEngagementRule(rule: AddedRule, facts: FactDefinition[]): boolean {
+  // A rule is an engagement if its parent is NOT in the facts array
+  return !facts.some(fact =>
+    fact.name === rule.parentName || fact.id === rule.parentName
+  );
+}
 
 export const CriteriaSection = ({
   sectionId,
   title,
   items,
   matchType,
-  timePeriod,
+  timePeriod: _timePeriod,
   isCollapsed = false,
-  shouldFocusInput = false,
   isActive = false,
   isInSelectionMode = false,
   selectedRuleIds = new Set(),
   isEngagementsOnly = false,
+  showRuleCounts = false,
+  ruleCounts = {},
+  isReadOnly = false,
   facts,
-  engagements,
+  engagements: _engagements,
   onMatchTypeChange,
-  onTimePeriodChange,
+  onTimePeriodChange: _onTimePeriodChange,
   onRuleDelete,
   onRuleChange,
   onRuleToggleExcluded,
   onRuleToggleDisabled,
   onRuleCommentChange,
   onRuleTrackVariableChange,
-  onAddProperty,
-  onAddAISuggestions,
   onEnterSelectionMode,
   onExitSelectionMode,
   onToggleRuleSelection,
   onGroupSelected,
   onUngroupGroup,
+  onDeleteGroup,
   onGroupMatchTypeChange,
   onRenameGroup,
+  onRuleTimePeriodChange,
   onToggleCollapse,
   onSetActive,
 }: CriteriaSectionProps) => {
-  // Extract only AddedRule items for display count (not groups)
-  const rules = items.filter(item => !isRuleGroup(item)) as AddedRule[];
-
   return (
     <Box
       bg="white"
@@ -137,111 +140,92 @@ export const CriteriaSection = ({
       onClick={onSetActive}
     >
       {/* Section Header */}
-      <Flex
-        align="center"
-        justify="space-between"
+      <Box
         px={4}
         py={3}
-        borderBottom={!isCollapsed && rules.length > 0 ? '1px solid' : 'none'}
+        borderBottom={!isCollapsed && items.length > 0 ? '1px solid' : 'none'}
         borderColor="gray.200"
-        cursor="pointer"
-        onClick={onToggleCollapse}
-        _hover={{ bg: 'gray.50' }}
       >
-        {/* Left side: Collapse icon + Title */}
+        {/* Section title with inline controls */}
         <Flex align="center" gap={2}>
           {/* Collapse icon */}
-          {isCollapsed ? (
-            <ChevronRightIcon fontSize="small" style={{ color: '#718096' }} />
-          ) : (
-            <ExpandMoreIcon fontSize="small" style={{ color: '#718096' }} />
+          <Box
+            cursor="pointer"
+            onClick={onToggleCollapse}
+            _hover={{ color: 'gray.600' }}
+            color="gray.400"
+          >
+            {isCollapsed ? (
+              <ChevronRightIcon fontSize="small" />
+            ) : (
+              <ExpandMoreIcon fontSize="small" />
+            )}
+          </Box>
+          <Text fontWeight="semibold" fontSize="md" flex={1}>
+            {SECTION_TITLES[sectionId] || title}
+          </Text>
+
+          {/* Inline controls - only show when there are rules, not collapsed, and not read-only */}
+          {!isCollapsed && items.length > 0 && !isReadOnly && (
+            <Flex align="center" gap={2} onClick={(e) => e.stopPropagation()}>
+              {/* + Group button - show when 2+ items, before All/Any */}
+              {items.length >= 2 && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  fontSize="xs"
+                  h="24px"
+                  px={2}
+                  onClick={onEnterSelectionMode}
+                >
+                  + Group
+                </Button>
+              )}
+
+              {/* All/Any segmented control - rightmost */}
+              <Flex
+                border="1px solid"
+                borderColor="gray.200"
+                borderRadius="md"
+                overflow="hidden"
+                fontSize="xs"
+              >
+                <Box
+                  px={2}
+                  py={1}
+                  bg={matchType === 'all' ? 'gray.100' : 'white'}
+                  cursor="pointer"
+                  fontWeight={matchType === 'all' ? 'medium' : 'normal'}
+                  onClick={() => onMatchTypeChange('all')}
+                  _hover={{ bg: matchType === 'all' ? 'gray.100' : 'gray.50' }}
+                >
+                  All
+                </Box>
+                <Box
+                  px={2}
+                  py={1}
+                  bg={matchType === 'any' ? 'gray.100' : 'white'}
+                  borderLeft="1px solid"
+                  borderColor="gray.200"
+                  cursor="pointer"
+                  fontWeight={matchType === 'any' ? 'medium' : 'normal'}
+                  onClick={() => onMatchTypeChange('any')}
+                  _hover={{ bg: matchType === 'any' ? 'gray.100' : 'gray.50' }}
+                >
+                  Any
+                </Box>
+              </Flex>
+            </Flex>
           )}
 
-          {/* Title */}
-          <Text fontSize="md" fontWeight="semibold" color="gray.700">
-            {title}
-          </Text>
+          {/* Read-only: show match type as text */}
+          {!isCollapsed && items.length > 0 && isReadOnly && (
+            <Text fontSize="xs" color="gray.500">
+              Match {matchType}
+            </Text>
+          )}
         </Flex>
-
-        {/* Right side: Dropdowns */}
-        {!isCollapsed && (
-          <Flex align="center" gap={2} onClick={(e) => e.stopPropagation()}>
-            {/* Match type dropdown - only show when 2+ rules */}
-            {rules.length >= 2 && (
-              <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
-                <Menu.Trigger asChild>
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    colorScheme="blue"
-                  >
-                    {matchType === 'all' ? 'all the rules below match' : 'any of the rules below match'}
-                    <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
-                  </Button>
-                </Menu.Trigger>
-                <Menu.Positioner>
-                  <Menu.Content>
-                    <Menu.Item
-                      value="all"
-                      onClick={() => onMatchTypeChange('all')}
-                    >
-                      all the rules below match
-                    </Menu.Item>
-                    <Menu.Item
-                      value="any"
-                      onClick={() => onMatchTypeChange('any')}
-                    >
-                      any of the rules below match
-                    </Menu.Item>
-                    <Menu.Separator />
-                    <Menu.Item
-                      value="group-rules"
-                      onClick={onEnterSelectionMode}
-                    >
-                      Group rules...
-                    </Menu.Item>
-                  </Menu.Content>
-                </Menu.Positioner>
-              </Menu.Root>
-            )}
-
-            {/* Time period dropdown - only for engagements-only sections OR non-entry sections */}
-            {(isEngagementsOnly || sectionId !== 'entry') && (
-              <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
-                <Menu.Trigger asChild>
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    colorScheme="blue"
-                  >
-                    {TIME_PERIOD_LABELS[timePeriod]}
-                    <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
-                  </Button>
-                </Menu.Trigger>
-                <Menu.Positioner>
-                  <Menu.Content>
-                    <Menu.Item value="last7days" onClick={() => onTimePeriodChange('last7days')}>
-                      in the last 7 days
-                    </Menu.Item>
-                    <Menu.Item value="last30days" onClick={() => onTimePeriodChange('last30days')}>
-                      in the last 30 days
-                    </Menu.Item>
-                    <Menu.Item value="last90days" onClick={() => onTimePeriodChange('last90days')}>
-                      in the last 90 days
-                    </Menu.Item>
-                    <Menu.Item value="lastYear" onClick={() => onTimePeriodChange('lastYear')}>
-                      in the last year
-                    </Menu.Item>
-                    <Menu.Item value="allTime" onClick={() => onTimePeriodChange('allTime')}>
-                      all time
-                    </Menu.Item>
-                  </Menu.Content>
-                </Menu.Positioner>
-              </Menu.Root>
-            )}
-          </Flex>
-        )}
-      </Flex>
+      </Box>
 
       {/* Section Content */}
       {!isCollapsed && (
@@ -283,7 +267,7 @@ export const CriteriaSection = ({
           {/* Items list (rules + groups) */}
           {items.length > 0 && (
             <Box>
-                {items.map((item) => {
+                {items.map((item, index) => {
                   // Render group
                   if (isRuleGroup(item)) {
                     return (
@@ -296,7 +280,8 @@ export const CriteriaSection = ({
                         isCollapsed={item.collapsed}
                         sectionId={sectionId}
                         facts={facts}
-                        engagements={engagements}
+                        isEngagementsOnly={isEngagementsOnly}
+                        isReadOnly={isReadOnly}
                         onMatchTypeChange={(matchType) => onGroupMatchTypeChange(item.id, matchType)}
                         onRuleDelete={onRuleDelete}
                         onRuleChange={onRuleChange}
@@ -305,12 +290,17 @@ export const CriteriaSection = ({
                         onRuleCommentChange={onRuleCommentChange}
                         onRuleTrackVariableChange={onRuleTrackVariableChange}
                         onUngroup={() => onUngroupGroup(item.id)}
+                        onDeleteGroup={onDeleteGroup ? () => onDeleteGroup(item.id) : undefined}
                         onRename={(name) => onRenameGroup(item.id, name)}
+                        onRuleTimePeriodChange={onRuleTimePeriodChange}
                       />
                     );
                   }
 
                   // Render rule
+                  // Check if this rule is an engagement (not a fact) - facts never show date ranges
+                  const ruleIsEngagement = isEngagementRule(item, facts);
+
                   return (
                     <RuleRow
                       key={item.id}
@@ -319,6 +309,8 @@ export const CriteriaSection = ({
                       parentName={item.parentName}
                       properties={item.properties}
                       preSelectedProperty={item.propertyId}
+                      initialOperator={item.operator}
+                      initialValue={item.value}
                       excluded={item.excluded}
                       disabled={item.disabled}
                       comment={item.comment}
@@ -326,6 +318,12 @@ export const CriteriaSection = ({
                       sectionId={sectionId}
                       isInSelectionMode={isInSelectionMode}
                       isSelected={selectedRuleIds.has(item.id)}
+                      isLast={index === items.length - 1}
+                      showMatchCount={showRuleCounts}
+                      matchCount={ruleCounts[item.id]}
+                      isEngagement={ruleIsEngagement}
+                      timePeriod={item.timePeriod}
+                      isReadOnly={isReadOnly}
                       onDelete={() => onRuleDelete(item.id)}
                       onChange={(data) => onRuleChange(item.id, data)}
                       onToggleExcluded={() => onRuleToggleExcluded(item.id)}
@@ -333,24 +331,21 @@ export const CriteriaSection = ({
                       onCommentChange={(comment) => onRuleCommentChange(item.id, comment)}
                       onTrackVariableChange={(variable) => onRuleTrackVariableChange(item.id, variable)}
                       onToggleSelection={() => onToggleRuleSelection(item.id)}
+                      onTimePeriodChange={onRuleTimePeriodChange ? (tp) => onRuleTimePeriodChange(item.id, tp) : undefined}
                     />
                   );
                 })}
             </Box>
           )}
 
-          {/* Add criteria input */}
-          <CriteriaSearchInput
-            sectionTitle={title}
-            sectionId={sectionId}
-            facts={facts}
-            engagements={engagements}
-            isEngagementsOnly={isEngagementsOnly}
-            shouldFocus={shouldFocusInput}
-            hasAnyRules={rules.length > 0}
-            onAddProperty={onAddProperty}
-            onAddAISuggestions={onAddAISuggestions}
-          />
+          {/* Empty state when no items */}
+          {items.length === 0 && (
+            <Box px={4} py={6} textAlign="center">
+              <Text fontSize="sm" color="gray.500">
+                No criteria added yet
+              </Text>
+            </Box>
+          )}
         </>
       )}
     </Box>

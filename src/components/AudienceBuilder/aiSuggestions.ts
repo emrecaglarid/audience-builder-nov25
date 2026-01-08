@@ -650,83 +650,66 @@ export function getAISuggestions(
     };
   }
 
-  // No pattern matched - return random suggestions from available data
-  // Gather all available facts and engagements
-  const allAvailable: Array<{
-    type: 'fact' | 'engagement';
-    category: any;
-    property: PropertyDefinition;
-  }> = [];
+  // Fallback: Demo pattern - European male repeat purchasers
+  // Returns fixed demo rules for any unmatched prompt (handles typos in demos)
+  const profile = facts.find((f: { id: string }) => f.id === 'customerProfile');
+  const purchaseHistory = facts.find((f: { id: string }) => f.id === 'purchaseHistory');
 
-  facts.forEach(fact => {
-    fact.properties.forEach((prop: PropertyDefinition) => {
-      allAvailable.push({
-        type: 'fact',
-        category: fact,
-        property: prop,
-      });
-    });
-  });
+  if (profile && purchaseHistory) {
+    const genderProp = profile.properties.find((p: PropertyDefinition) => p.id === 'gender');
+    const regionProp = profile.properties.find((p: PropertyDefinition) => p.id === 'location_region');
+    const ageProp = profile.properties.find((p: PropertyDefinition) => p.id === 'age');
+    const ordersProp = purchaseHistory.properties.find((p: PropertyDefinition) => p.id === 'total_orders');
 
-  engagements.forEach(engagement => {
-    engagement.properties.forEach((prop: PropertyDefinition) => {
-      allAvailable.push({
-        type: 'engagement',
-        category: engagement,
-        property: prop,
-      });
-    });
-  });
-
-  // If nothing available at all, return empty
-  if (allAvailable.length === 0) {
-    return {
-      suggestions: [],
-      explanation: "No properties available to suggest",
-    };
+    if (genderProp && regionProp && ageProp && ordersProp) {
+      return {
+        explanation: 'Demo rule set',
+        suggestions: [
+          {
+            id: `ai-${Date.now()}-1`,
+            propertyId: genderProp.id,
+            propertyName: genderProp.name,
+            parentName: profile.name,
+            operator: 'equals',
+            value: 'male',
+            properties: profile.properties,
+          },
+          {
+            id: `ai-${Date.now()}-2`,
+            propertyId: regionProp.id,
+            propertyName: regionProp.name,
+            parentName: profile.name,
+            operator: 'equals',
+            value: 'Europe',
+            properties: profile.properties,
+          },
+          {
+            id: `ai-${Date.now()}-3`,
+            propertyId: ageProp.id,
+            propertyName: ageProp.name,
+            parentName: profile.name,
+            operator: 'greaterThan',
+            value: 30,
+            properties: profile.properties,
+          },
+          {
+            id: `ai-${Date.now()}-4`,
+            propertyId: ordersProp.id,
+            propertyName: ordersProp.name,
+            parentName: purchaseHistory.name,
+            operator: 'greaterThanOrEqual',
+            value: 3,
+            properties: purchaseHistory.properties,
+          },
+        ],
+      };
+    }
   }
 
-  // Pick 1-2 random properties
-  const numSuggestions = Math.min(2, allAvailable.length);
-  const shuffled = [...allAvailable].sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, numSuggestions);
-
-  // Build suggestions with appropriate operators
-  const suggestions: AISuggestion[] = selected.map((item, index) => {
-    const prop = item.property;
-
-    // Pick an appropriate operator based on property type
-    let operator = 'equals';
-    let value: string | number | boolean = '';
-
-    if (prop.dataType === 'number') {
-      operator = 'greaterThanOrEqual';
-      value = 1;
-    } else if (prop.dataType === 'boolean') {
-      operator = 'isTrue';
-      value = true;
-    } else if (prop.dataType === 'date') {
-      operator = 'last30days';
-      value = '';
-    } else if (prop.dataType === 'string') {
-      operator = 'contains';
-      value = '';
-    }
-
-    return {
-      id: `ai-${Date.now()}-${index}`,
-      propertyId: prop.id,
-      propertyName: prop.name,
-      parentName: item.category.name,
-      operator,
-      value,
-      properties: item.category.properties,
-    };
-  });
-
+  // If demo properties not available, return empty
   return {
-    explanation: 'AI-generated suggestions based on your input',
-    suggestions,
+    suggestions: [],
+    explanation: "No matching criteria found",
   };
 }
 

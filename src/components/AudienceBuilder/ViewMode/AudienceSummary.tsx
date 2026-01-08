@@ -37,7 +37,7 @@ function isRuleGroup(item: AddedRule | RuleGroup): item is RuleGroup {
 }
 
 type MatchType = 'all' | 'any';
-type TimePeriod = 'last7days' | 'last30days' | 'last90days' | 'lastYear' | 'allTime' | 'customRange';
+type TimePeriod = 'last7days' | 'last30days' | 'last90days' | 'lastYear' | 'allTime' | 'customRange' | 'perRule';
 
 interface SectionConfig {
   id: string;
@@ -102,6 +102,7 @@ export const AudienceSummary = ({
     lastYear: 'in last year',
     allTime: 'all time',
     customRange: 'in custom range',
+    perRule: 'per-rule',
   };
 
   return (

@@ -6,6 +6,18 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import { useState, useMemo, ChangeEvent } from 'react'
 import type { PropertyDefinition } from '../../types/schema'
 import type { ComparisonOperator, DateOperator } from '../../types/query'
+import type { TimePeriod } from './CriteriaSection'
+
+// Time period labels for read-only display
+const TIME_PERIOD_LABELS: Record<TimePeriod, string> = {
+  last7days: 'last 7 days',
+  last30days: 'last 30 days',
+  last90days: 'last 90 days',
+  lastYear: 'last year',
+  allTime: 'all time',
+  customRange: 'custom range',
+  perRule: 'per rule',
+}
 
 interface RuleRowProps {
   ruleId: string
@@ -13,6 +25,8 @@ interface RuleRowProps {
   parentName: string
   properties: PropertyDefinition[]
   preSelectedProperty?: string // Property ID to pre-select and disable selector
+  initialOperator?: string // Initial operator value from saved data
+  initialValue?: string | number | boolean // Initial value from saved data
   excluded?: boolean
   disabled?: boolean
   comment?: string
@@ -20,6 +34,15 @@ interface RuleRowProps {
   sectionId?: string // To conditionally enable "Exclude matches" for entry section only
   isInSelectionMode?: boolean // Whether the section is in selection mode for grouping
   isSelected?: boolean // Whether this rule is currently selected
+  isLast?: boolean // Whether this is the last rule in the list (no bottom border)
+  isInGroup?: boolean // Whether this rule is inside a RuleGroup (no borders)
+  isIndented?: boolean // Whether to indent the name (for rules inside groups)
+  matchCount?: number // Individual match count for this rule
+  showMatchCount?: boolean // Whether to display the match count
+  showTimePeriod?: boolean // Whether to show per-rule time period dropdown (legacy)
+  isEngagement?: boolean // Whether this rule is an engagement (shows inline time dropdown)
+  timePeriod?: TimePeriod // The rule's individual time period
+  isReadOnly?: boolean // Whether to render in read-only mode (no inputs/actions)
   onDelete: () => void
   onChange?: (data: {
     property: string
@@ -31,6 +54,7 @@ interface RuleRowProps {
   onCommentChange?: (comment: string) => void
   onTrackVariableChange?: (variable: string) => void
   onToggleSelection?: () => void
+  onTimePeriodChange?: (timePeriod: TimePeriod) => void
 }
 
 // Operator options based on data type
@@ -80,6 +104,8 @@ export function RuleRow({
   ruleName,
   properties,
   preSelectedProperty,
+  initialOperator,
+  initialValue,
   excluded = false,
   disabled = false,
   comment,
@@ -87,6 +113,15 @@ export function RuleRow({
   sectionId,
   isInSelectionMode = false,
   isSelected = false,
+  isLast = false,
+  isInGroup = false,
+  isIndented = false,
+  matchCount,
+  showMatchCount = false,
+  showTimePeriod = false,
+  isEngagement = false,
+  timePeriod,
+  isReadOnly = false,
   onDelete,
   onChange,
   onToggleExcluded,
@@ -94,10 +129,11 @@ export function RuleRow({
   onCommentChange,
   onTrackVariableChange,
   onToggleSelection,
+  onTimePeriodChange,
 }: RuleRowProps) {
   const [selectedProperty] = useState<string>(preSelectedProperty || '')
-  const [selectedOperator, setSelectedOperator] = useState<string>('')
-  const [value, setValue] = useState<string>('')
+  const [selectedOperator, setSelectedOperator] = useState<string>(initialOperator || '')
+  const [value, setValue] = useState<string>(initialValue !== undefined ? String(initialValue) : '')
   const [value2, setValue2] = useState<string>('') // For "between" operator
   const [error] = useState<string | null>(null) // TODO: Implement validation logic
   const [isEditingComment, setIsEditingComment] = useState(false)
@@ -171,7 +207,7 @@ export function RuleRow({
 
   return (
     <Box
-      borderBottom="1px solid"
+      borderBottom={isInGroup || isLast ? 'none' : '1px solid'}
       borderColor="gray.100"
       borderLeft={isSelected ? '3px solid' : undefined}
       borderLeftColor={isSelected ? 'blue.500' : undefined}
@@ -201,8 +237,8 @@ export function RuleRow({
           />
         )}
 
-        {/* Property name */}
-        <Box minW="150px" flex="0 0 auto">
+        {/* Property name - with optional indent for grouped items */}
+        <Box minW="150px" flex="0 0 auto" ml={isIndented ? 6 : 0}>
           {excluded && (
             <Text fontSize="xs" fontWeight="medium" color="red.600" mb={0.5}>
               Exclude if
@@ -213,40 +249,53 @@ export function RuleRow({
           </Text>
         </Box>
 
-        {/* Operator dropdown */}
+        {/* Operator dropdown / text */}
         <Box flex="0 0 200px">
-          <select
-            value={selectedOperator}
-            onChange={handleOperatorChange}
-            disabled={disabled}
-            style={{
-              fontSize: '14px',
-              width: '100%',
-              borderWidth: '1px',
-              borderColor: '#E2E8F0',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              backgroundColor: 'white',
-              cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
-          >
-            <option value="">Select operator</option>
-            {operators.map((op) => (
-              <option key={op.value} value={op.value}>
-                {op.label}
-              </option>
-            ))}
-          </select>
+          {isReadOnly ? (
+            <Text fontSize="sm" color="gray.600">
+              {operators.find(op => op.value === selectedOperator)?.label || selectedOperator || '—'}
+            </Text>
+          ) : (
+            <select
+              value={selectedOperator}
+              onChange={handleOperatorChange}
+              disabled={disabled}
+              style={{
+                fontSize: '14px',
+                width: '100%',
+                borderWidth: '1px',
+                borderColor: '#E2E8F0',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                backgroundColor: 'white',
+                cursor: disabled ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <option value="">Select operator</option>
+              {operators.map((op) => (
+                <option key={op.value} value={op.value}>
+                  {op.label}
+                </option>
+              ))}
+            </select>
+          )}
         </Box>
 
-        {/* Value input - only shown when operator needs a value */}
+        {/* Value input / text - only shown when operator needs a value */}
         {selectedOperator &&
          selectedOperator !== 'isTrue' &&
          selectedOperator !== 'isFalse' &&
          !selectedOperator.startsWith('last') &&
          selectedOperator !== 'allTime' ? (
           <Box flex="1" minW="0">
-            {selectedOperator === 'between' ? (
+            {isReadOnly ? (
+              // Read-only: show value as text
+              <Text fontSize="sm" color="gray.700">
+                {selectedOperator === 'between' && value2
+                  ? `${value || '—'} and ${value2}`
+                  : value || '—'}
+              </Text>
+            ) : selectedOperator === 'between' ? (
               <Flex gap={2} align="center">
                 <Input
                   placeholder="Lower value"
@@ -311,76 +360,129 @@ export function RuleRow({
           <Box flex="1" />
         )}
 
-        {/* Metadata Icon Buttons - only show when active */}
-        <Flex align="center" gap={0.5}>
-          {/* Disable - only show when disabled */}
-          {disabled && (
-            <IconButton
-              aria-label="Disable rule"
-              title="Disable rule"
-              size="sm"
-              variant="ghost"
-              onClick={onToggleDisabled}
-              color="gray.600"
-              _hover={{ color: 'gray.600' }}
-            >
-              <VisibilityOffIcon fontSize="small" />
-            </IconButton>
-          )}
-        </Flex>
+        {/* Per-rule time period dropdown / text - show for engagements or when explicitly enabled */}
+        {(isEngagement || showTimePeriod) && (
+          <Box flex="0 0 auto">
+            {isReadOnly ? (
+              <Text fontSize="sm" color="gray.500">
+                {TIME_PERIOD_LABELS[timePeriod || 'last30days']}
+              </Text>
+            ) : (
+              <select
+                value={timePeriod || 'last30days'}
+                onChange={(e) => onTimePeriodChange?.(e.target.value as TimePeriod)}
+                disabled={disabled}
+                style={{
+                  fontSize: '13px',
+                  borderWidth: '1px',
+                  borderColor: '#E2E8F0',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  backgroundColor: 'white',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                  color: '#4A5568',
+                }}
+              >
+                <option value="last7days">last 7 days</option>
+                <option value="last30days">last 30 days</option>
+                <option value="last90days">last 90 days</option>
+                <option value="lastYear">last year</option>
+                <option value="allTime">all time</option>
+              </select>
+            )}
+          </Box>
+        )}
 
-        {/* Actions: Three-dot menu + Delete button */}
-        <Flex align="center" gap={1}>
-          {/* Three-dot menu */}
-          <Menu.Root positioning={{ placement: 'bottom-end', strategy: 'fixed' }}>
-            <Menu.Trigger asChild>
+        {/* Metadata Icon Buttons - only show when active and not read-only */}
+        {!isReadOnly && (
+          <Flex align="center" gap={0.5}>
+            {/* Disable - only show when disabled */}
+            {disabled && (
               <IconButton
-                aria-label="More options"
+                aria-label="Disable rule"
+                title="Disable rule"
                 size="sm"
                 variant="ghost"
+                onClick={onToggleDisabled}
+                color="gray.600"
+                _hover={{ color: 'gray.600' }}
               >
-                <MoreVertIcon fontSize="small" />
+                <VisibilityOffIcon fontSize="small" />
               </IconButton>
-            </Menu.Trigger>
-            <Menu.Positioner>
-              <Menu.Content>
-                {/* Exclude matches - only for entry section */}
-                {sectionId === 'entry' && (
-                  <Menu.Item value="exclude" onClick={onToggleExcluded}>
-                    <Text>{excluded ? 'Include matches' : 'Exclude matches'}</Text>
-                  </Menu.Item>
-                )}
+            )}
+          </Flex>
+        )}
 
-                {/* Disable */}
-                <Menu.Item value="disable" onClick={onToggleDisabled}>
-                  <Text>Disable</Text>
-                </Menu.Item>
+        {/* Actions: Match count badge + Three-dot menu + Delete button */}
+        <Flex align="center" gap={1}>
+          {/* Match count badge - only show when enabled */}
+          {showMatchCount && matchCount !== undefined && (
+            <Text
+              fontSize="xs"
+              bg="gray.100"
+              px={2}
+              py={0.5}
+              borderRadius="full"
+              color="gray.600"
+            >
+              {matchCount >= 1000 ? (matchCount / 1000).toFixed(1) + 'K' : matchCount.toLocaleString()}
+            </Text>
+          )}
 
-                {/* Comment */}
-                <Menu.Item value="comment" onClick={() => setIsEditingComment(true)}>
-                  <Text>{comment ? 'Edit comment' : 'Add comment'}</Text>
-                </Menu.Item>
+          {/* Three-dot menu and Delete button - hide in read-only mode */}
+          {!isReadOnly && (
+            <>
+              <Menu.Root positioning={{ placement: 'bottom-end', strategy: 'fixed' }}>
+                <Menu.Trigger asChild>
+                  <IconButton
+                    aria-label="More options"
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                </Menu.Trigger>
+                <Menu.Positioner>
+                  <Menu.Content>
+                    {/* Exclude matches - only for entry section */}
+                    {sectionId === 'entry' && (
+                      <Menu.Item value="exclude" onClick={onToggleExcluded}>
+                        <Text>{excluded ? 'Include matches' : 'Exclude matches'}</Text>
+                      </Menu.Item>
+                    )}
 
-                <Menu.Separator />
+                    {/* Disable */}
+                    <Menu.Item value="disable" onClick={onToggleDisabled}>
+                      <Text>Disable</Text>
+                    </Menu.Item>
 
-                {/* Store data */}
-                <Menu.Item value="track" onClick={() => setIsEditingVariable(true)}>
-                  <Text>{trackVariable ? 'Edit variable' : 'Store data'}</Text>
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Menu.Root>
+                    {/* Comment */}
+                    <Menu.Item value="comment" onClick={() => setIsEditingComment(true)}>
+                      <Text>{comment ? 'Edit comment' : 'Add comment'}</Text>
+                    </Menu.Item>
 
-          {/* Delete button */}
-          <IconButton
-            aria-label="Delete rule"
-            size="sm"
-            variant="ghost"
-            colorScheme="red"
-            onClick={onDelete}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+                    <Menu.Separator />
+
+                    {/* Store data */}
+                    <Menu.Item value="track" onClick={() => setIsEditingVariable(true)}>
+                      <Text>{trackVariable ? 'Edit variable' : 'Store data'}</Text>
+                    </Menu.Item>
+                  </Menu.Content>
+                </Menu.Positioner>
+              </Menu.Root>
+
+              {/* Delete button */}
+              <IconButton
+                aria-label="Delete rule"
+                size="sm"
+                variant="ghost"
+                colorScheme="red"
+                onClick={onDelete}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </>
+          )}
         </Flex>
       </Flex>
 
@@ -392,9 +494,9 @@ export function RuleRow({
           pt={1}
           pl="40px"
           bg={excluded ? 'red.50' : undefined}
-          cursor="pointer"
-          onClick={() => setIsEditingComment(true)}
-          _hover={{ bg: excluded ? 'red.100' : 'gray.50' }}
+          cursor={isReadOnly ? 'default' : 'pointer'}
+          onClick={isReadOnly ? undefined : () => setIsEditingComment(true)}
+          _hover={isReadOnly ? undefined : { bg: excluded ? 'red.100' : 'gray.50' }}
           transition="background 0.2s"
         >
           <Flex align="flex-start" gap={2}>
@@ -414,9 +516,9 @@ export function RuleRow({
           pt={1}
           pl="40px"
           bg={excluded ? 'red.50' : undefined}
-          cursor="pointer"
-          onClick={() => setIsEditingVariable(true)}
-          _hover={{ bg: excluded ? 'red.100' : 'gray.50' }}
+          cursor={isReadOnly ? 'default' : 'pointer'}
+          onClick={isReadOnly ? undefined : () => setIsEditingVariable(true)}
+          _hover={isReadOnly ? undefined : { bg: excluded ? 'red.100' : 'gray.50' }}
           transition="background 0.2s"
         >
           <Flex align="flex-start" gap={2}>

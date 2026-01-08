@@ -19,7 +19,7 @@ export const HistoricalDataBanner = ({ onLoadClick }: HistoricalDataBannerProps)
         <Flex align="center" gap={3} flex="1">
           <InfoIcon style={{ color: '#3182CE', fontSize: '20px' }} />
           <Text fontSize="sm" color="blue.900">
-            Limited data shown. Load historical data to see full performance metrics.
+            No data available for audience yet. You can load historical data.
           </Text>
         </Flex>
         <Button

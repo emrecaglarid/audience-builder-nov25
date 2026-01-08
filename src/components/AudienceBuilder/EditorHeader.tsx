@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 type AudienceStatus = 'draft' | 'published'
-type TabType = 'define' | 'sync' | 'analyze'
+type TabType = 'audience' | 'goals' | 'sync' | 'analyze'
 
 interface EditorHeaderProps {
   audienceName: string
@@ -19,6 +19,8 @@ interface EditorHeaderProps {
   hasUnsavedChanges: boolean
   activeTab: TabType
   hasCompleteRule: boolean
+  isReadOnly?: boolean // Whether the editor is in read-only mode
+  isEditMode?: boolean // Whether we're editing a published audience
   onNameChange: (name: string) => void
   onSave: () => void
   onPublish: () => void
@@ -28,6 +30,8 @@ interface EditorHeaderProps {
   isLoadingData?: boolean
   onLoadHistoricalData?: () => void
   onUnpublish?: () => void
+  onEnterEditMode?: () => void
+  onDiscardChanges?: () => void
 }
 
 function EditorHeader({
@@ -36,6 +40,8 @@ function EditorHeader({
   hasUnsavedChanges,
   activeTab,
   hasCompleteRule,
+  isReadOnly = false,
+  isEditMode = false,
   onNameChange,
   onSave,
   onPublish,
@@ -44,7 +50,9 @@ function EditorHeader({
   hasHistoricalData,
   isLoadingData,
   onLoadHistoricalData,
-  onUnpublish
+  onUnpublish,
+  onEnterEditMode,
+  onDiscardChanges
 }: EditorHeaderProps) {
   const navigate = useNavigate()
   const [isEditingName, setIsEditingName] = useState(false)
@@ -117,14 +125,17 @@ function EditorHeader({
               <Text fontSize="xl" fontWeight="semibold">
                 {audienceName}
               </Text>
-              <IconButton
-                aria-label="Edit name"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsEditingName(true)}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
+              {/* Hide edit name button in read-only mode */}
+              {!isReadOnly && (
+                <IconButton
+                  aria-label="Edit name"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditingName(true)}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              )}
             </Flex>
           )}
         </Flex>
@@ -140,15 +151,28 @@ function EditorHeader({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onTabChange('define')}
-            bg={activeTab === 'define' ? 'white' : 'transparent'}
-            color={activeTab === 'define' ? 'gray.900' : 'gray.600'}
-            fontWeight={activeTab === 'define' ? 'semibold' : 'normal'}
-            _hover={{ bg: activeTab === 'define' ? 'white' : 'gray.200' }}
-            boxShadow={activeTab === 'define' ? 'sm' : 'none'}
+            onClick={() => onTabChange('audience')}
+            bg={activeTab === 'audience' ? 'white' : 'transparent'}
+            color={activeTab === 'audience' ? 'gray.900' : 'gray.600'}
+            fontWeight={activeTab === 'audience' ? 'semibold' : 'normal'}
+            _hover={{ bg: activeTab === 'audience' ? 'white' : 'gray.200' }}
+            boxShadow={activeTab === 'audience' ? 'sm' : 'none'}
             borderRadius="md"
           >
-            Define
+            Audience
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onTabChange('goals')}
+            bg={activeTab === 'goals' ? 'white' : 'transparent'}
+            color={activeTab === 'goals' ? 'gray.900' : 'gray.600'}
+            fontWeight={activeTab === 'goals' ? 'semibold' : 'normal'}
+            _hover={{ bg: activeTab === 'goals' ? 'white' : 'gray.200' }}
+            boxShadow={activeTab === 'goals' ? 'sm' : 'none'}
+            borderRadius="md"
+          >
+            Goals
           </Button>
           <Button
             variant="ghost"
@@ -200,13 +224,28 @@ function EditorHeader({
           )}
 
           {/* Primary CTA - right side */}
+
+          {/* Read-only mode: show Edit button */}
+          {isReadOnly && onEnterEditMode && (
+            <Button colorScheme="purple" size="md" onClick={onEnterEditMode}>
+              Edit
+            </Button>
+          )}
+
+          {/* Edit mode for published: show Discard button */}
+          {!isReadOnly && status === 'published' && isEditMode && onDiscardChanges && (
+            <Button variant="outline" size="md" onClick={onDiscardChanges}>
+              Discard
+            </Button>
+          )}
+
           {hasUnsavedChanges && status === 'draft' && (
             <Button colorScheme="purple" size="md" onClick={onSave}>
               Save as draft
             </Button>
           )}
 
-          {hasUnsavedChanges && status === 'published' && (
+          {hasUnsavedChanges && status === 'published' && !isReadOnly && (
             <Button colorScheme="purple" size="md" onClick={onSave}>
               Save changes
             </Button>

@@ -146,6 +146,7 @@ interface SyncSectionProps {
   experimentMode: boolean
   isModalOpen: boolean
   isActive?: boolean
+  isReadOnly?: boolean // Whether to render in read-only mode (no controls/actions)
   onSetActive?: () => void
   onOpenModal: () => void
   onCloseModal: () => void
@@ -164,6 +165,7 @@ export function SyncSection({
   experimentMode,
   isModalOpen,
   isActive = false,
+  isReadOnly = false,
   onSetActive,
   onOpenModal,
   onCloseModal,
@@ -226,8 +228,8 @@ export function SyncSection({
             )}
           </Flex>
 
-          {/* Right side: Experiment toggle (when 2+ destinations) */}
-          {destinations.length >= 2 && (
+          {/* Right side: Experiment toggle (when 2+ destinations) - hide in read-only */}
+          {destinations.length >= 2 && !isReadOnly && (
             <Flex align="center" gap={2} onClick={(e) => e.stopPropagation()}>
               <Text fontSize="xs" color="gray.600">
                 Experiment
@@ -261,12 +263,19 @@ export function SyncSection({
               </label>
             </Flex>
           )}
+
+          {/* Read-only: show experiment mode as text label */}
+          {destinations.length >= 2 && isReadOnly && experimentMode && (
+            <Text fontSize="xs" color="blue.600">
+              Experiment mode
+            </Text>
+          )}
         </Flex>
 
         {/* Section Content */}
         <>
-          {/* Experiment mode: Warning or Slider (same height to prevent layout shift) */}
-          {experimentMode && destinations.length > 0 && (
+          {/* Experiment mode: Warning or Slider (same height to prevent layout shift) - hide warning in read-only */}
+          {experimentMode && destinations.length > 0 && !isReadOnly && (
               <Box minH="48px">
                 {hasPercentageError ? (
                   <Box px={4} py={3} bg="orange.50" borderBottom="1px solid" borderColor="orange.200" minH="48px" display="flex" alignItems="center" justifyContent="space-between">
@@ -303,6 +312,7 @@ export function SyncSection({
                     destination={destination}
                     destinationIndex={index}
                     experimentMode={experimentMode}
+                    isReadOnly={isReadOnly}
                     onDelete={() => onDestinationDelete(destination.id)}
                     onTogglePaused={() => onDestinationTogglePaused(destination.id)}
                     onCommentChange={(comment) => onDestinationCommentChange(destination.id, comment)}
@@ -313,20 +323,22 @@ export function SyncSection({
               </Box>
             )}
 
-            {/* Add destination button */}
-            <Box p={3} borderTop={destinations.length > 0 ? '1px solid' : 'none'} borderColor="gray.100">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onOpenModal()
-                }}
-              >
-                <AddIcon fontSize="small" style={{ marginRight: '8px' }} />
-                Add destination
-              </Button>
-            </Box>
+            {/* Add destination button - hide in read-only mode */}
+            {!isReadOnly && (
+              <Box p={3} borderTop={destinations.length > 0 ? '1px solid' : 'none'} borderColor="gray.100">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onOpenModal()
+                  }}
+                >
+                  <AddIcon fontSize="small" style={{ marginRight: '8px' }} />
+                  Add destination
+                </Button>
+              </Box>
+            )}
         </>
       </Box>
 

@@ -15,6 +15,7 @@
         { "id": "gender", "name": "Gender", "description": "Customer gender", "dataType": "string", "allowedValues": ["male", "female", "non-binary", "prefer-not-to-say"] },
         { "id": "location_city", "name": "Location City", "description": "City of residence", "dataType": "string" },
         { "id": "location_state", "name": "Location State", "description": "State code", "dataType": "string" },
+        { "id": "location_region", "name": "Location Region", "description": "Geographic region", "dataType": "string", "allowedValues": ["Europe", "North America", "Asia Pacific", "Latin America", "Middle East"] },
         { "id": "signup_date", "name": "Signup Date", "description": "Account creation date", "dataType": "date" },
         { "id": "email_subscribed", "name": "Email Subscribed", "description": "Marketing email subscription", "dataType": "boolean" }
       ]

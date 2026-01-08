@@ -26,7 +26,9 @@ export default function LibraryPaneWrapper({
       engagements={schema.engagements}
       recentlyUsed={recentlyUsed || []}
       isVisible={true}
+      activeSectionId={activeSectionId}
       activeSectionName={activeSectionName}
+      isEngagementsOnly={activeSectionId === 'goals' || activeSectionId === 'exit'}
       onItemClick={() => {}}
       onPropertyClick={(propertyRef) => {
         // Call the prop function with the section ID and property match format
@@ -40,7 +42,6 @@ export default function LibraryPaneWrapper({
           onPropertyClick(activeSectionId, match)
         }
       }}
-      onClose={() => {}}
     />
   )
 }

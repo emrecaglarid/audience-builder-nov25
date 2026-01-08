@@ -116,145 +116,169 @@ export const Dashboard = ({
           <SuccessBanner onDismiss={onDismissSuccess} />
         )}
 
-        {/* Date Range Selector */}
-        <Flex justify="space-between" align="center">
-          <Text fontSize="lg" fontWeight="semibold" color="gray.700">
-            Audience performance
-          </Text>
-
-          <Menu.Root positioning={{ placement: 'bottom-end', strategy: 'fixed' }}>
-            <Menu.Trigger asChild>
-              <Button size="sm" variant="outline" colorScheme="gray">
-                {DATE_RANGE_LABELS[dateRange]}
-                <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
-              </Button>
-            </Menu.Trigger>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item value="last7days" onClick={() => setDateRange('last7days')}>
-                  Last 7 days
-                </Menu.Item>
-                <Menu.Item value="last30days" onClick={() => setDateRange('last30days')}>
-                  Last 30 days
-                </Menu.Item>
-                <Menu.Item value="last90days" onClick={() => setDateRange('last90days')}>
-                  Last 90 days
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Menu.Root>
-        </Flex>
-
-        {/* KPI Cards Row */}
-        <Flex gap={4}>
-          <KPICard
-            label="Active Profiles"
-            value={summary.currentActive}
-            color="purple.600"
-          />
-          <KPICard
-            label="Entered"
-            value={summary.totalEntered}
-            trend={summary.netGrowthPercent}
-            color="green.600"
-          />
-          <KPICard
-            label="Exited"
-            value={summary.totalExited}
-            color="red.600"
-          />
-          <KPICard
-            label="Net Growth"
-            value={summary.netGrowth}
-            trend={summary.netGrowthPercent}
-            color={summary.netGrowth >= 0 ? 'green.600' : 'red.600'}
-            formatValue={(val) => {
-              const num = typeof val === 'number' ? val : parseInt(val as string);
-              return num >= 0 ? `+${num.toLocaleString()}` : num.toLocaleString();
-            }}
-          />
-        </Flex>
-
-        {/* Main Chart */}
-        <Box>
-          <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={4}>
-            Audience Flow Over Time
-          </Text>
+        {/* Simple empty state when no historical data */}
+        {!hasHistoricalData && !isLoadingData && (
           <Box
             bg="white"
             borderRadius="lg"
             border="1px solid"
             borderColor="gray.200"
             p={6}
-          >
-            <AudienceChart data={daily} goalNames={goalNames} />
-          </Box>
-        </Box>
-
-        {/* Goal Cards */}
-        {Object.keys(summary.goals).length > 0 && (
-          <Box>
-            <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={4}>
-              Goal Performance
-            </Text>
-            <Flex gap={4} flexWrap="wrap">
-              {Object.entries(summary.goals).map(([goalId, goalData]) => (
-                <GoalCard
-                  key={goalId}
-                  goalName={goalData.name}
-                  completions={goalData.totalCompletions}
-                  completionRate={goalData.completionRate}
-                  totalValue={goalData.totalValue}
-                  avgValue={goalData.avgValue}
-                  trend={goalData.trend}
-                  sparklineData={getGoalSparklineData(goalId)}
-                />
-              ))}
-            </Flex>
-          </Box>
-        )}
-
-        {/* Placeholder for future features */}
-        {Object.keys(summary.goals).length === 0 && (
-          <Box
-            bg="white"
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="gray.200"
-            p={6}
-            height="200px"
+            height="300px"
             display="flex"
             alignItems="center"
             justifyContent="center"
           >
-            <VStack gap={2}>
-              <Text fontSize="sm" color="gray.400">
-                No goals defined yet
-              </Text>
-              <Text fontSize="xs" color="gray.400">
-                Add goals to your audience to track performance
-              </Text>
-            </VStack>
-          </Box>
-        )}
-
-        {/* Sync & Activation Section */}
-        {syncDestinations.length > 0 && (
-          <SyncActivationSection
-            destinations={syncDestinations}
-            experimentMode={experimentMode}
-            currentAudienceSize={summary.currentActive}
-          />
-        )}
-
-        {/* Supermetrics Integration */}
-        {syncDestinations.length > 0 && (
-          <Box>
-            <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={4}>
-              Track ROI in Supermetrics
+            <Text fontSize="sm" color="gray.400">
+              Performance data will appear here once loaded
             </Text>
-            <SupermetricsIntegration destinations={syncDestinations} />
           </Box>
+        )}
+
+        {/* Full dashboard when historical data is loaded */}
+        {hasHistoricalData && (
+          <>
+            {/* Date Range Selector */}
+            <Flex justify="space-between" align="center">
+              <Text fontSize="lg" fontWeight="semibold" color="gray.700">
+                Audience performance
+              </Text>
+
+              <Menu.Root positioning={{ placement: 'bottom-end', strategy: 'fixed' }}>
+                <Menu.Trigger asChild>
+                  <Button size="sm" variant="outline" colorScheme="gray">
+                    {DATE_RANGE_LABELS[dateRange]}
+                    <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
+                  </Button>
+                </Menu.Trigger>
+                <Menu.Positioner>
+                  <Menu.Content>
+                    <Menu.Item value="last7days" onClick={() => setDateRange('last7days')}>
+                      Last 7 days
+                    </Menu.Item>
+                    <Menu.Item value="last30days" onClick={() => setDateRange('last30days')}>
+                      Last 30 days
+                    </Menu.Item>
+                    <Menu.Item value="last90days" onClick={() => setDateRange('last90days')}>
+                      Last 90 days
+                    </Menu.Item>
+                  </Menu.Content>
+                </Menu.Positioner>
+              </Menu.Root>
+            </Flex>
+
+            {/* KPI Cards Row */}
+            <Flex gap={4}>
+              <KPICard
+                label="Active Profiles"
+                value={summary.currentActive}
+                color="purple.600"
+              />
+              <KPICard
+                label="Entered"
+                value={summary.totalEntered}
+                trend={summary.netGrowthPercent}
+                color="green.600"
+              />
+              <KPICard
+                label="Exited"
+                value={summary.totalExited}
+                color="red.600"
+              />
+              <KPICard
+                label="Net Growth"
+                value={summary.netGrowth}
+                trend={summary.netGrowthPercent}
+                color={summary.netGrowth >= 0 ? 'green.600' : 'red.600'}
+                formatValue={(val) => {
+                  const num = typeof val === 'number' ? val : parseInt(val as string);
+                  return num >= 0 ? `+${num.toLocaleString()}` : num.toLocaleString();
+                }}
+              />
+            </Flex>
+
+            {/* Main Chart */}
+            <Box>
+              <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={4}>
+                Audience Flow Over Time
+              </Text>
+              <Box
+                bg="white"
+                borderRadius="lg"
+                border="1px solid"
+                borderColor="gray.200"
+                p={6}
+              >
+                <AudienceChart data={daily} goalNames={goalNames} />
+              </Box>
+            </Box>
+
+            {/* Goal Cards */}
+            {Object.keys(summary.goals).length > 0 && (
+              <Box>
+                <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={4}>
+                  Goal Performance
+                </Text>
+                <Flex gap={4} flexWrap="wrap">
+                  {Object.entries(summary.goals).map(([goalId, goalData]) => (
+                    <GoalCard
+                      key={goalId}
+                      goalName={goalData.name}
+                      completions={goalData.totalCompletions}
+                      completionRate={goalData.completionRate}
+                      totalValue={goalData.totalValue}
+                      avgValue={goalData.avgValue}
+                      trend={goalData.trend}
+                      sparklineData={getGoalSparklineData(goalId)}
+                    />
+                  ))}
+                </Flex>
+              </Box>
+            )}
+
+            {/* Placeholder for future features */}
+            {Object.keys(summary.goals).length === 0 && (
+              <Box
+                bg="white"
+                borderRadius="lg"
+                border="1px solid"
+                borderColor="gray.200"
+                p={6}
+                height="200px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <VStack gap={2}>
+                  <Text fontSize="sm" color="gray.400">
+                    No goals defined yet
+                  </Text>
+                  <Text fontSize="xs" color="gray.400">
+                    Add goals to your audience to track performance
+                  </Text>
+                </VStack>
+              </Box>
+            )}
+
+            {/* Sync & Activation Section */}
+            {syncDestinations.length > 0 && (
+              <SyncActivationSection
+                destinations={syncDestinations}
+                experimentMode={experimentMode}
+                currentAudienceSize={summary.currentActive}
+              />
+            )}
+
+            {/* Supermetrics Integration */}
+            {syncDestinations.length > 0 && (
+              <Box>
+                <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={4}>
+                  Track ROI in Supermetrics
+                </Text>
+                <SupermetricsIntegration destinations={syncDestinations} />
+              </Box>
+            )}
+          </>
         )}
       </VStack>
     </Box>

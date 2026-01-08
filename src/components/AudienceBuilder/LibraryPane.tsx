@@ -2,13 +2,14 @@ import { Box, Text, VStack, Flex, Input, IconButton, Badge } from '@chakra-ui/re
 import { Tooltip } from '@chakra-ui/react'
 import SearchIcon from '@mui/icons-material/Search'
 import ClearIcon from '@mui/icons-material/Clear'
-import CloseIcon from '@mui/icons-material/Close'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import AddIcon from '@mui/icons-material/Add'
-import { useState, useMemo } from 'react'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { FactDefinition, EngagementDefinition, PropertyDefinition, PropertyReference } from '@/types'
+import { detectInputMode } from './aiSuggestions'
 
 // Map section titles to concise tooltip text
 function getSectionTooltipText(sectionTitle: string): string {
@@ -27,10 +28,12 @@ interface LibraryPaneProps {
   engagements: EngagementDefinition[]
   recentlyUsed: PropertyReference[]
   isVisible: boolean
+  activeSectionId?: string
   activeSectionName?: string
+  isEngagementsOnly?: boolean
   onItemClick: (item: FactDefinition | EngagementDefinition, type: 'fact' | 'engagement') => void
   onPropertyClick: (propertyRef: PropertyReference) => void
-  onClose: () => void
+  onSwitchToAI?: (query: string) => void
 }
 
 type NavigationView =
@@ -106,18 +109,73 @@ function DraggablePropertyItem({
   )
 }
 
-function LibraryPane({ facts, engagements, isVisible, activeSectionName = 'section', onPropertyClick, onClose }: LibraryPaneProps) {
+function LibraryPane({ facts, engagements, isVisible, activeSectionId: _activeSectionId, activeSectionName = 'section', isEngagementsOnly = false, onPropertyClick, onSwitchToAI }: LibraryPaneProps) {
   if (!isVisible) return null
 
   const [searchQuery, setSearchQuery] = useState('')
   const [navigationView, setNavigationView] = useState<NavigationView>({ type: 'main' })
   const [hoveredProperty, setHoveredProperty] = useState<string | null>(null)
-  const [factsExpanded, setFactsExpanded] = useState(false)
-  const [engagementsExpanded, setEngagementsExpanded] = useState(false)
+  const [factsExpanded, setFactsExpanded] = useState(!isEngagementsOnly)
+  const [engagementsExpanded, setEngagementsExpanded] = useState(true)
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Collapse/expand facts section when switching between tabs
+  useEffect(() => {
+    if (isEngagementsOnly) {
+      setFactsExpanded(false)
+    } else {
+      setFactsExpanded(true)
+    }
+  }, [isEngagementsOnly])
+
+  // Handle search input with AI detection
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+
+    // Detect if user is typing natural language (AI mode)
+    if (value.trim() && onSwitchToAI) {
+      const mode = detectInputMode(value)
+      if (mode === 'ai') {
+        // Switch to AI pane with the query
+        onSwitchToAI(value)
+        setSearchQuery('')
+      }
+    }
+  }
+
+  // Filter facts/engagements based on isEngagementsOnly and search
+  const availableFacts = isEngagementsOnly ? [] : facts
+
+  // Build flat list of all searchable properties
+  const allProperties = useMemo(() => {
+    const props: Array<{property: PropertyDefinition, type: 'fact' | 'engagement', parentId: string, parentName: string}> = []
+    if (!isEngagementsOnly) {
+      facts.forEach(f => f.properties.forEach(p => props.push({property: p, type: 'fact', parentId: f.id, parentName: f.name})))
+    }
+    engagements.forEach(e => e.properties.forEach(p => props.push({property: p, type: 'engagement', parentId: e.id, parentName: e.name})))
+    return props
+  }, [facts, engagements, isEngagementsOnly])
+
+  // Search results - flat list of matching properties
+  const searchResults = useMemo(() => {
+    if (!searchQuery) return []
+    const query = searchQuery.toLowerCase()
+    return allProperties.filter(item =>
+      item.property.name.toLowerCase().includes(query) ||
+      item.property.description.toLowerCase().includes(query)
+    )
+  }, [allProperties, searchQuery])
+
+  // Reset selected index when search results change
+  useEffect(() => {
+    setSelectedIndex(0)
+  }, [searchResults.length])
 
   // Filter facts/engagements for main view
   const filteredFacts = useMemo(() => {
-    if (!searchQuery) return facts
+    if (isEngagementsOnly) return []
+    if (!searchQuery) return availableFacts
 
     const query = searchQuery.toLowerCase()
     return facts.filter(fact => {
@@ -201,10 +259,51 @@ function LibraryPane({ facts, engagements, isVisible, activeSectionName = 'secti
     }
   }
 
+  // Handle clicking a search result
+  const handleSearchResultClick = (item: typeof searchResults[0]) => {
+    const propertyRef: PropertyReference = {
+      type: item.type,
+      parentId: item.parentId,
+      parentName: item.parentName,
+      property: item.property
+    }
+    onPropertyClick(propertyRef)
+  }
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (searchResults.length === 0) {
+      if (e.key === 'Escape') {
+        setSearchQuery('')
+      }
+      return
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setSelectedIndex(prev => Math.min(prev + 1, searchResults.length - 1))
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setSelectedIndex(prev => Math.max(prev - 1, 0))
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (searchResults[selectedIndex]) {
+          handleSearchResultClick(searchResults[selectedIndex])
+        }
+        break
+      case 'Escape':
+        setSearchQuery('')
+        break
+    }
+  }
+
   return (
     <Box
       width="320px"
-      height="calc(100vh - 60px - 48px)"
+      height="100%"
       bg="white"
       borderRadius="lg"
       border="1px solid"
@@ -213,7 +312,7 @@ function LibraryPane({ facts, engagements, isVisible, activeSectionName = 'secti
       flexDirection="column"
       flexShrink={0}
     >
-      {/* Header with title and close button */}
+      {/* Header */}
       <Flex
         align="center"
         justify="space-between"
@@ -223,45 +322,25 @@ function LibraryPane({ facts, engagements, isVisible, activeSectionName = 'secti
         borderColor="gray.200"
       >
         {navigationView.type === 'main' ? (
-          <>
-            <Text fontWeight="semibold" fontSize="md">
-              Add property
-            </Text>
-            <IconButton
-              aria-label="Close"
-              size="sm"
-              variant="ghost"
-              onClick={onClose}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </>
+          <Text fontWeight="semibold" fontSize="md">
+            Library
+          </Text>
         ) : (
-          <>
-            <Flex align="center" gap={2} flex={1}>
-              <IconButton
-                aria-label="Back to library"
-                size="sm"
-                variant="ghost"
-                onClick={handleBackClick}
-              >
-                <ArrowBackIcon fontSize="small" />
-              </IconButton>
-              <Text fontWeight="semibold" fontSize="md" lineClamp={1}>
-                {navigationView.type === 'fact-detail'
-                  ? navigationView.fact.name
-                  : navigationView.engagement.name}
-              </Text>
-            </Flex>
+          <Flex align="center" gap={2} flex={1}>
             <IconButton
-              aria-label="Close library"
+              aria-label="Back to library"
               size="sm"
               variant="ghost"
-              onClick={onClose}
+              onClick={handleBackClick}
             >
-              <CloseIcon fontSize="small" />
+              <ArrowBackIcon fontSize="small" />
             </IconButton>
-          </>
+            <Text fontWeight="semibold" fontSize="md" lineClamp={1}>
+              {navigationView.type === 'fact-detail'
+                ? navigationView.fact.name
+                : navigationView.engagement.name}
+            </Text>
+          </Flex>
         )}
       </Flex>
 
@@ -281,17 +360,14 @@ function LibraryPane({ facts, engagements, isVisible, activeSectionName = 'secti
             <SearchIcon fontSize="small" style={{ color: '#A0AEC0' }} />
           </Box>
           <Input
-            placeholder={navigationView.type === 'main' ? 'Search properties...' : 'Search...'}
+            ref={searchInputRef}
+            placeholder="Search properties"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             size="sm"
             paddingLeft="36px"
             paddingRight={searchQuery ? '36px' : '12px'}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                setSearchQuery('')
-              }
-            }}
+            onKeyDown={handleKeyDown}
           />
           {searchQuery && (
             <Box position="absolute" right="4px" top="50%" transform="translateY(-50%)" zIndex={1}>
@@ -310,7 +386,59 @@ function LibraryPane({ facts, engagements, isVisible, activeSectionName = 'secti
 
       {/* Scrollable Content */}
       <Box flex={1} overflowY="auto">
-        {navigationView.type === 'main' ? (
+        {/* Search Results View */}
+        {searchQuery && searchResults.length > 0 ? (
+          <VStack align="stretch" gap={0}>
+            {searchResults.map((item, index) => {
+              const isSelected = index === selectedIndex
+              return (
+                <Flex
+                  key={`${item.parentId}-${item.property.id}`}
+                  align="center"
+                  justify="space-between"
+                  px={4}
+                  py={2}
+                  cursor="pointer"
+                  bg={isSelected ? 'blue.50' : 'transparent'}
+                  _hover={{ bg: isSelected ? 'blue.50' : 'gray.50' }}
+                  onClick={() => handleSearchResultClick(item)}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  <Box flex={1}>
+                    <Text fontSize="sm" fontWeight="medium">{item.property.name}</Text>
+                    <Text fontSize="xs" color="gray.500">from {item.parentName}</Text>
+                  </Box>
+                  <Box
+                    opacity={isSelected ? 1 : 0}
+                    transition="opacity 0.2s"
+                    display="flex"
+                    alignItems="center"
+                  >
+                    <AddIcon fontSize="small" style={{ fontSize: '16px', color: '#3182CE' }} />
+                  </Box>
+                </Flex>
+              )
+            })}
+          </VStack>
+        ) : searchQuery && searchResults.length === 0 ? (
+          <Box px={4} py={2}>
+            <Flex
+              align="center"
+              px={3}
+              py={2}
+              cursor="pointer"
+              bg="purple.50"
+              borderRadius="md"
+              _hover={{ bg: 'purple.100' }}
+              onClick={() => onSwitchToAI && onSwitchToAI(searchQuery)}
+            >
+              <AutoAwesomeIcon fontSize="small" style={{ color: '#805AD5', marginRight: '8px' }} />
+              <Text fontSize="sm" color="purple.700">
+                Build with AI: '{searchQuery}'
+              </Text>
+            </Flex>
+          </Box>
+        ) : navigationView.type === 'main' ? (
           <VStack align="stretch" gap={0}>
             {/* Facts Section */}
             <Box>
@@ -369,8 +497,11 @@ function LibraryPane({ facts, engagements, isVisible, activeSectionName = 'secti
               ) : null}
             </Box>
 
+            {/* Divider */}
+            <Box borderTop="1px solid" borderColor="gray.100" my={2} />
+
             {/* Engagements Section */}
-            <Box mt={4}>
+            <Box>
               <Flex
                 align="center"
                 justify="space-between"

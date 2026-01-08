@@ -13,6 +13,7 @@ interface DestinationRowProps {
   destination: AddedDestination
   destinationIndex: number
   experimentMode?: boolean
+  isReadOnly?: boolean // Whether to render in read-only mode (no inputs/actions)
   onDelete: () => void
   onTogglePaused?: () => void
   onCommentChange?: (comment: string) => void
@@ -24,6 +25,7 @@ export function DestinationRow({
   destination,
   destinationIndex,
   experimentMode = false,
+  isReadOnly = false,
   onDelete,
   onTogglePaused,
   onCommentChange,
@@ -77,112 +79,128 @@ export function DestinationRow({
           </Text>
         </VStack>
 
-        {/* Target audience input */}
+        {/* Target audience input / text */}
         <Box flex="1" minW="0">
-          <Input
-            placeholder="Target audience name..."
-            value={targetAudienceName}
-            onChange={(e) => setTargetAudienceName(e.target.value)}
-            onBlur={() => onTargetAudienceChange?.(targetAudienceName)}
-            size="sm"
-            fontSize="sm"
-          />
+          {isReadOnly ? (
+            <Text fontSize="sm" color="gray.700">
+              {targetAudienceName || '—'}
+            </Text>
+          ) : (
+            <Input
+              placeholder="Target audience name..."
+              value={targetAudienceName}
+              onChange={(e) => setTargetAudienceName(e.target.value)}
+              onBlur={() => onTargetAudienceChange?.(targetAudienceName)}
+              size="sm"
+              fontSize="sm"
+            />
+          )}
         </Box>
 
-        {/* Experiment mode: percentage slider + editable input */}
+        {/* Experiment mode: percentage slider + editable input OR text in read-only */}
         {experimentMode && (
-          <Box flex="0 0 220px">
-            <Flex gap={2} align="center">
-              {/* Slider */}
-              <Box flex="1">
-                <Slider.Root
-                  min={0}
-                  max={100}
-                  step={10}
-                  value={[destination.trafficPercentage || 0]}
-                  onValueChange={(details) => onPercentageChange?.(details.value[0], true)}
-                  size="sm"
-                >
-                  <Slider.Track>
-                    <Slider.Range />
-                  </Slider.Track>
-                  <Slider.Thumb index={0} />
-                </Slider.Root>
-              </Box>
+          isReadOnly ? (
+            <Box flex="0 0 70px" textAlign="right">
+              <Text fontSize="sm" color="gray.600">
+                {destination.trafficPercentage || 0}%
+              </Text>
+            </Box>
+          ) : (
+            <Box flex="0 0 220px">
+              <Flex gap={2} align="center">
+                {/* Slider */}
+                <Box flex="1">
+                  <Slider.Root
+                    min={0}
+                    max={100}
+                    step={10}
+                    value={[destination.trafficPercentage || 0]}
+                    onValueChange={(details) => onPercentageChange?.(details.value[0], true)}
+                    size="sm"
+                  >
+                    <Slider.Track>
+                      <Slider.Range />
+                    </Slider.Track>
+                    <Slider.Thumb index={0} />
+                  </Slider.Root>
+                </Box>
 
-              {/* Editable percentage input */}
-              <Box position="relative" width="70px">
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={destination.trafficPercentage || 0}
-                  onChange={(e) => onPercentageChange?.(parseInt(e.target.value) || 0, false)}
-                  size="sm"
-                  textAlign="right"
-                  pr="24px"
-                />
-                <Text
-                  position="absolute"
-                  right="8px"
-                  top="50%"
-                  transform="translateY(-50%)"
-                  fontSize="xs"
-                  color="gray.500"
-                  pointerEvents="none"
-                >
-                  %
-                </Text>
-              </Box>
-            </Flex>
-          </Box>
+                {/* Editable percentage input */}
+                <Box position="relative" width="70px">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={destination.trafficPercentage || 0}
+                    onChange={(e) => onPercentageChange?.(parseInt(e.target.value) || 0, false)}
+                    size="sm"
+                    textAlign="right"
+                    pr="24px"
+                  />
+                  <Text
+                    position="absolute"
+                    right="8px"
+                    top="50%"
+                    transform="translateY(-50%)"
+                    fontSize="xs"
+                    color="gray.500"
+                    pointerEvents="none"
+                  >
+                    %
+                  </Text>
+                </Box>
+              </Flex>
+            </Box>
+          )
         )}
 
-        {/* Actions: Three-dot menu + Delete button */}
-        <Flex align="center" gap={1}>
-          {/* Three-dot menu */}
-          <Menu.Root positioning={{ placement: 'bottom-end', strategy: 'fixed' }}>
-            <Menu.Trigger asChild>
-              <IconButton
-                aria-label="More options"
-                size="sm"
-                variant="ghost"
-              >
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
-            </Menu.Trigger>
-            <Menu.Positioner>
-              <Menu.Content>
-                {/* Pause/Resume */}
-                <Menu.Item value="pause" onClick={onTogglePaused}>
-                  <Flex align="center" gap={2}>
-                    {isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
-                    <Text>{isPaused ? 'Resume' : 'Pause'}</Text>
-                  </Flex>
-                </Menu.Item>
+        {/* Actions: Three-dot menu + Delete button - hide in read-only mode */}
+        {!isReadOnly && (
+          <Flex align="center" gap={1}>
+            {/* Three-dot menu */}
+            <Menu.Root positioning={{ placement: 'bottom-end', strategy: 'fixed' }}>
+              <Menu.Trigger asChild>
+                <IconButton
+                  aria-label="More options"
+                  size="sm"
+                  variant="ghost"
+                >
+                  <MoreVertIcon fontSize="small" />
+                </IconButton>
+              </Menu.Trigger>
+              <Menu.Positioner>
+                <Menu.Content>
+                  {/* Pause/Resume */}
+                  <Menu.Item value="pause" onClick={onTogglePaused}>
+                    <Flex align="center" gap={2}>
+                      {isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
+                      <Text>{isPaused ? 'Resume' : 'Pause'}</Text>
+                    </Flex>
+                  </Menu.Item>
 
-                {/* Comment */}
-                <Menu.Item value="comment" onClick={() => setIsEditingComment(true)}>
-                  <Flex align="center" gap={2}>
-                    <CommentIcon fontSize="small" />
-                    <Text>{destination.comment ? 'Edit comment' : 'Add comment'}</Text>
-                  </Flex>
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Menu.Root>
+                  {/* Comment */}
+                  <Menu.Item value="comment" onClick={() => setIsEditingComment(true)}>
+                    <Flex align="center" gap={2}>
+                      <CommentIcon fontSize="small" />
+                      <Text>{destination.comment ? 'Edit comment' : 'Add comment'}</Text>
+                    </Flex>
+                  </Menu.Item>
+                </Menu.Content>
+              </Menu.Positioner>
+            </Menu.Root>
 
-          {/* Delete button */}
-          <IconButton
-            aria-label="Delete destination"
-            size="sm"
-            variant="ghost"
-            colorScheme="red"
-            onClick={onDelete}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Flex>
+            {/* Delete button */}
+            <IconButton
+              aria-label="Delete destination"
+              size="sm"
+              variant="ghost"
+              colorScheme="red"
+              onClick={onDelete}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Flex>
+        )}
       </Flex>
 
       {/* Comment display - always visible when comment exists */}
@@ -192,9 +210,9 @@ export function DestinationRow({
           pb={2}
           pt={1}
           pl="40px"
-          cursor="pointer"
-          onClick={() => setIsEditingComment(true)}
-          _hover={{ bg: 'gray.50' }}
+          cursor={isReadOnly ? 'default' : 'pointer'}
+          onClick={isReadOnly ? undefined : () => setIsEditingComment(true)}
+          _hover={isReadOnly ? undefined : { bg: 'gray.50' }}
           transition="background 0.2s"
         >
           <Flex align="flex-start" gap={2}>

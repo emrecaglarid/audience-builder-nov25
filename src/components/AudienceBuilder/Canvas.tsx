@@ -1,26 +1,11 @@
-import { Box, Text, VStack, Flex, Button } from '@chakra-ui/react';
-import { Menu } from '@chakra-ui/react';
+import { Box, Text, VStack, Flex } from '@chakra-ui/react';
 import AddIcon from '@mui/icons-material/Add';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useState } from 'react';
 import { CriteriaSection, MatchType, TimePeriod, type AddedRule, type RuleGroup } from './CriteriaSection';
-import { CriteriaSearchInput } from './CriteriaSearchInput';
-import { RuleRow } from './RuleRow';
 import { SyncSection } from './SyncSection';
 import { DestinationPickerModal } from './DestinationPickerModal';
 import type { FactDefinition, EngagementDefinition } from '../../types/schema';
-import type { PropertyMatch } from './PropertyDropdown';
-import type { AISuggestion } from './aiSuggestions';
 import type { AddedDestination, Destination } from '../../types/destination';
-
-const TIME_PERIOD_LABELS: Record<TimePeriod, string> = {
-  'last7days': 'in the last 7 days',
-  'last30days': 'in the last 30 days',
-  'last90days': 'in the last 90 days',
-  'lastYear': 'in the last year',
-  'allTime': 'all time',
-  'customRange': 'custom range',
-};
 
 interface SectionConfig {
   id: string;
@@ -35,18 +20,17 @@ interface CanvasProps {
   sections: SectionConfig[];
   facts: FactDefinition[];
   engagements: EngagementDefinition[];
-  focusSectionId: string | null;
   activatedSections: Set<string>;
   activeSectionId: string;
-  activeTab: 'define' | 'sync' | 'analyze';
-  shouldSplitEntry?: boolean;
-  entryFacts?: AddedRule[];
-  entryEngagements?: AddedRule[];
+  activeTab: 'audience' | 'goals' | 'sync' | 'analyze';
   syncDestinations: AddedDestination[];
   experimentMode: boolean;
   isDestinationModalOpen: boolean;
   sectionSelectionMode: Record<string, boolean>;
   sectionSelectedRules: Record<string, Set<string>>;
+  showRuleCounts?: boolean;
+  ruleCounts?: Record<string, number>;
+  isReadOnly?: boolean;
   onSectionMatchTypeChange: (sectionId: string, matchType: MatchType) => void;
   onSectionTimePeriodChange: (sectionId: string, timePeriod: TimePeriod) => void;
   onSectionToggleCollapse: (sectionId: string) => void;
@@ -57,15 +41,15 @@ interface CanvasProps {
   onRuleToggleDisabled: (sectionId: string, ruleId: string) => void;
   onRuleCommentChange: (sectionId: string, ruleId: string, comment: string) => void;
   onRuleTrackVariableChange: (sectionId: string, ruleId: string, variable: string) => void;
+  onRuleTimePeriodChange: (sectionId: string, ruleId: string, timePeriod: TimePeriod) => void;
   onAddSection: (sectionId: string) => void;
   onSetActiveSection: (sectionId: string) => void;
-  onAddProperty: (sectionId: string, match: PropertyMatch) => void;
-  onAddAISuggestions: (sectionId: string, suggestions: AISuggestion[]) => void;
   onEnterSelectionMode: (sectionId: string) => void;
   onExitSelectionMode: (sectionId: string) => void;
   onToggleRuleSelection: (sectionId: string, ruleId: string) => void;
   onGroupSelected: (sectionId: string) => void;
   onUngroupGroup: (sectionId: string, groupId: string) => void;
+  onDeleteGroup: (sectionId: string, groupId: string) => void;
   onGroupMatchTypeChange: (sectionId: string, groupId: string, matchType: MatchType) => void;
   onRenameGroup: (sectionId: string, groupId: string, name: string) => void;
   onOpenDestinationModal: () => void;
@@ -133,18 +117,17 @@ export const Canvas = ({
   sections,
   facts,
   engagements,
-  focusSectionId,
   activatedSections,
   activeSectionId,
   activeTab,
-  shouldSplitEntry = false,
-  entryFacts = [],
-  entryEngagements = [],
   syncDestinations,
   experimentMode,
   isDestinationModalOpen,
   sectionSelectionMode,
   sectionSelectedRules,
+  showRuleCounts = false,
+  ruleCounts = {},
+  isReadOnly = false,
   onSectionMatchTypeChange,
   onSectionTimePeriodChange,
   onSectionToggleCollapse,
@@ -155,15 +138,15 @@ export const Canvas = ({
   onRuleToggleDisabled,
   onRuleCommentChange,
   onRuleTrackVariableChange,
+  onRuleTimePeriodChange,
   onAddSection,
   onSetActiveSection,
-  onAddProperty,
-  onAddAISuggestions,
   onEnterSelectionMode,
   onExitSelectionMode,
   onToggleRuleSelection,
   onGroupSelected,
   onUngroupGroup,
+  onDeleteGroup,
   onGroupMatchTypeChange,
   onRenameGroup,
   onOpenDestinationModal,
@@ -179,9 +162,12 @@ export const Canvas = ({
 }: CanvasProps) => {
   // Filter sections based on active tab
   const visibleSections = sections.filter(section => {
-    if (activeTab === 'define') {
-      // Define tab: show entry, goals, exit
-      return section.id === 'entry' || section.id === 'goals' || section.id === 'exit';
+    if (activeTab === 'audience') {
+      // Audience tab: show entry + exit (who is in/out)
+      return section.id === 'entry' || section.id === 'exit';
+    } else if (activeTab === 'goals') {
+      // Goals tab: show only goals
+      return section.id === 'goals';
     } else if (activeTab === 'sync') {
       // Sync tab: show only sync
       return section.id === 'sync';
@@ -195,188 +181,10 @@ export const Canvas = ({
   return (
     <Box
       width="100%"
-      maxWidth="900px"
+      maxWidth="1100px"
     >
       <VStack align="stretch" gap={4}>
         {visibleSections.map((section) => {
-          // Special handling for entry section when split
-          if (section.id === 'entry' && shouldSplitEntry) {
-            return (
-              <Box
-                key={section.id}
-                bg="white"
-                borderRadius="lg"
-                border="1px solid"
-                borderColor="gray.200"
-                overflow="visible"
-                mb={4}
-              >
-                {/* Main Entry Header */}
-                <Flex
-                  align="center"
-                  px={4}
-                  py={3}
-                  borderBottom="1px solid"
-                  borderColor="gray.200"
-                >
-                  <Text fontSize="md" fontWeight="semibold" color="gray.700">
-                    {section.title}
-                  </Text>
-                </Flex>
-
-                {/* Facts Subsection */}
-                <Box px={4} py={3} borderBottom="1px solid" borderColor="gray.100">
-                  <Flex align="center" justify="space-between" mb={2}>
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.600">
-                      Facts
-                    </Text>
-                    {entryFacts.length >= 2 && (
-                      <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
-                        <Menu.Trigger asChild>
-                          <Button size="xs" variant="ghost" colorScheme="blue">
-                            {section.matchType === 'all' ? 'all the rules below match' : 'any of the rules below match'}
-                            <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
-                          </Button>
-                        </Menu.Trigger>
-                        <Menu.Positioner>
-                          <Menu.Content>
-                            <Menu.Item value="all" onClick={() => onSectionMatchTypeChange(section.id, 'all')}>
-                              all the rules below match
-                            </Menu.Item>
-                            <Menu.Item value="any" onClick={() => onSectionMatchTypeChange(section.id, 'any')}>
-                              any of the rules below match
-                            </Menu.Item>
-                          </Menu.Content>
-                        </Menu.Positioner>
-                      </Menu.Root>
-                    )}
-                  </Flex>
-                  {entryFacts.map((rule) => (
-                    <RuleRow
-                      key={rule.id}
-                      ruleId={rule.id}
-                      ruleName={rule.propertyName}
-                      parentName={rule.parentName}
-                      properties={rule.properties}
-                      preSelectedProperty={rule.propertyId}
-                      excluded={rule.excluded}
-                      disabled={rule.disabled}
-                      comment={rule.comment}
-                      trackVariable={rule.trackVariable}
-                      sectionId="entry"
-                      isInSelectionMode={false}
-                      isSelected={false}
-                      onDelete={() => onRuleDelete('entry', rule.id)}
-                      onChange={(data) => onRuleChange('entry', rule.id, data)}
-                      onToggleExcluded={() => onRuleToggleExcluded('entry', rule.id)}
-                      onToggleDisabled={() => onRuleToggleDisabled('entry', rule.id)}
-                      onCommentChange={(comment) => onRuleCommentChange('entry', rule.id, comment)}
-                      onTrackVariableChange={(variable) => onRuleTrackVariableChange('entry', rule.id, variable)}
-                      onToggleSelection={() => {}}
-                    />
-                  ))}
-                </Box>
-
-                {/* Engagements Subsection */}
-                <Box px={4} py={3}>
-                  <Flex align="center" justify="space-between" mb={2}>
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.600">
-                      Engagements
-                    </Text>
-                    <Flex align="center" gap={2}>
-                      {entryEngagements.length >= 2 && (
-                        <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
-                          <Menu.Trigger asChild>
-                            <Button size="xs" variant="ghost" colorScheme="blue">
-                              {section.matchType === 'all' ? 'all the rules below match' : 'any of the rules below match'}
-                              <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
-                            </Button>
-                          </Menu.Trigger>
-                          <Menu.Positioner>
-                            <Menu.Content>
-                              <Menu.Item value="all" onClick={() => onSectionMatchTypeChange(section.id, 'all')}>
-                                all the rules below match
-                              </Menu.Item>
-                              <Menu.Item value="any" onClick={() => onSectionMatchTypeChange(section.id, 'any')}>
-                                any of the rules below match
-                              </Menu.Item>
-                            </Menu.Content>
-                          </Menu.Positioner>
-                        </Menu.Root>
-                      )}
-                      {entryEngagements.length > 0 && (
-                        <Menu.Root positioning={{ placement: 'bottom-start', strategy: 'fixed' }}>
-                          <Menu.Trigger asChild>
-                            <Button size="xs" variant="ghost" colorScheme="blue">
-                              {TIME_PERIOD_LABELS[section.timePeriod]}
-                              <ExpandMoreIcon fontSize="small" style={{ marginLeft: '4px' }} />
-                            </Button>
-                          </Menu.Trigger>
-                          <Menu.Positioner>
-                            <Menu.Content>
-                              <Menu.Item value="last7days" onClick={() => onSectionTimePeriodChange(section.id, 'last7days')}>
-                                in the last 7 days
-                              </Menu.Item>
-                              <Menu.Item value="last30days" onClick={() => onSectionTimePeriodChange(section.id, 'last30days')}>
-                                in the last 30 days
-                              </Menu.Item>
-                              <Menu.Item value="last90days" onClick={() => onSectionTimePeriodChange(section.id, 'last90days')}>
-                                in the last 90 days
-                              </Menu.Item>
-                              <Menu.Item value="lastYear" onClick={() => onSectionTimePeriodChange(section.id, 'lastYear')}>
-                                in the last year
-                              </Menu.Item>
-                              <Menu.Item value="allTime" onClick={() => onSectionTimePeriodChange(section.id, 'allTime')}>
-                                all time
-                              </Menu.Item>
-                            </Menu.Content>
-                          </Menu.Positioner>
-                        </Menu.Root>
-                      )}
-                    </Flex>
-                  </Flex>
-                  {entryEngagements.map((rule) => (
-                    <RuleRow
-                      key={rule.id}
-                      ruleId={rule.id}
-                      ruleName={rule.propertyName}
-                      parentName={rule.parentName}
-                      properties={rule.properties}
-                      preSelectedProperty={rule.propertyId}
-                      excluded={rule.excluded}
-                      disabled={rule.disabled}
-                      comment={rule.comment}
-                      trackVariable={rule.trackVariable}
-                      sectionId="entry"
-                      isInSelectionMode={false}
-                      isSelected={false}
-                      onDelete={() => onRuleDelete('entry', rule.id)}
-                      onChange={(data) => onRuleChange('entry', rule.id, data)}
-                      onToggleExcluded={() => onRuleToggleExcluded('entry', rule.id)}
-                      onToggleDisabled={() => onRuleToggleDisabled('entry', rule.id)}
-                      onCommentChange={(comment) => onRuleCommentChange('entry', rule.id, comment)}
-                      onTrackVariableChange={(variable) => onRuleTrackVariableChange('entry', rule.id, variable)}
-                      onToggleSelection={() => {}}
-                    />
-                  ))}
-                </Box>
-
-                {/* Add criteria input - shared for both Facts and Engagements */}
-                <CriteriaSearchInput
-                  sectionTitle="Enter audience if"
-                  sectionId="entry"
-                  facts={facts}
-                  engagements={engagements}
-                  isEngagementsOnly={false}
-                  shouldFocus={focusSectionId === 'entry'}
-                  hasAnyRules={entryFacts.length > 0 || entryEngagements.length > 0}
-                  onAddProperty={(match) => onAddProperty('entry', match)}
-                  onAddAISuggestions={(suggestions) => onAddAISuggestions('entry', suggestions)}
-                />
-              </Box>
-            );
-          }
-
           // Special handling for sync section
           if (section.id === 'sync') {
             // Show sync section if it has destinations OR has been activated
@@ -388,6 +196,7 @@ export const Canvas = ({
                   experimentMode={experimentMode}
                   isModalOpen={isDestinationModalOpen}
                   isActive={activeSectionId === section.id}
+                  isReadOnly={isReadOnly}
                   onSetActive={() => onSetActiveSection(section.id)}
                   onOpenModal={onOpenDestinationModal}
                   onCloseModal={onCloseDestinationModal}
@@ -468,11 +277,13 @@ export const Canvas = ({
               matchType={section.matchType}
               timePeriod={section.timePeriod}
               isCollapsed={section.isCollapsed}
-              shouldFocusInput={focusSectionId === section.id}
               isActive={activeSectionId === section.id}
               isInSelectionMode={sectionSelectionMode[section.id] || false}
               selectedRuleIds={sectionSelectedRules[section.id] || new Set()}
               isEngagementsOnly={section.id === 'exit' || section.id === 'goals'}
+              showRuleCounts={showRuleCounts}
+              ruleCounts={ruleCounts}
+              isReadOnly={isReadOnly}
               facts={facts}
               engagements={engagements}
               onMatchTypeChange={(matchType) => onSectionMatchTypeChange(section.id, matchType)}
@@ -486,13 +297,13 @@ export const Canvas = ({
               onRuleToggleDisabled={(ruleId) => onRuleToggleDisabled(section.id, ruleId)}
               onRuleCommentChange={(ruleId, comment) => onRuleCommentChange(section.id, ruleId, comment)}
               onRuleTrackVariableChange={(ruleId, variable) => onRuleTrackVariableChange(section.id, ruleId, variable)}
-              onAddProperty={(match) => onAddProperty(section.id, match)}
-              onAddAISuggestions={(suggestions) => onAddAISuggestions(section.id, suggestions)}
+              onRuleTimePeriodChange={(ruleId, timePeriod) => onRuleTimePeriodChange(section.id, ruleId, timePeriod)}
               onEnterSelectionMode={() => onEnterSelectionMode(section.id)}
               onExitSelectionMode={() => onExitSelectionMode(section.id)}
               onToggleRuleSelection={(ruleId) => onToggleRuleSelection(section.id, ruleId)}
               onGroupSelected={() => onGroupSelected(section.id)}
               onUngroupGroup={(groupId) => onUngroupGroup(section.id, groupId)}
+              onDeleteGroup={(groupId) => onDeleteGroup(section.id, groupId)}
               onGroupMatchTypeChange={(groupId, matchType) => onGroupMatchTypeChange(section.id, groupId, matchType)}
               onRenameGroup={(groupId, name) => onRenameGroup(section.id, groupId, name)}
             />

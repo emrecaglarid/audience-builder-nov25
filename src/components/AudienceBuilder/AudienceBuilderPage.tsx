@@ -1,25 +1,23 @@
 import { useParams } from 'react-router-dom';
-import { Box, Flex, Text, Button } from '@chakra-ui/react';
+import { Box, Flex } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
-import AddIcon from '@mui/icons-material/Add';
 import { getAudience, saveAudience } from '../../services/audienceStorage';
 import { useApp } from '@/context/AppContext';
 import { PropertyReference } from '@/types';
 import EditorHeader from './EditorHeader';
 import LibraryPane from './LibraryPane';
+import { ActivityBar, type PaneType } from './ActivityBar';
+import { AIPane } from './AIPane';
 import { Canvas } from './Canvas';
-import PreviewPane, { PreviewTimePeriod } from './PreviewPane';
-import { ToolbarPane } from './Toolbar';
+import { SimulationBar } from './SimulationBar';
 import { MatchType, TimePeriod, type AddedRule, type RuleGroup, isRuleGroup } from './CriteriaSection';
-import type { PropertyMatch } from './PropertyDropdown';
 import type { AISuggestion } from './aiSuggestions';
 import { calculateAudienceSize } from '@/utils/queryEngine';
 import { sectionsToConditionGroup } from '@/utils/audienceQueryBuilder';
 import type { AddedDestination, Destination } from '../../types/destination';
-import { AudienceSummary } from './ViewMode/AudienceSummary';
 import { Dashboard } from './ViewMode/Dashboard';
 import { HistoricalDataModal } from './ViewMode/HistoricalDataModal';
-import { DestinationSimulation } from './DestinationSimulation';
+import { GoalsConversionPanel } from './GoalsConversionPanel';
 
 interface SectionConfig {
   id: string;
@@ -28,14 +26,6 @@ interface SectionConfig {
   matchType: MatchType;
   timePeriod: TimePeriod;
   isCollapsed: boolean;
-}
-
-// Helper function to determine if a rule belongs to a fact or engagement
-function isFactItem(item: AddedRule, schema: any): boolean {
-  // Check if the item's properties match any fact's properties
-  return schema?.facts.some((fact: any) =>
-    fact.properties.some((prop: any) => prop.id === item.propertyId)
-  ) || false;
 }
 
 function AudienceBuilderPage() {
@@ -48,19 +38,27 @@ function AudienceBuilderPage() {
   const [audienceStatus, setAudienceStatus] = useState<'draft' | 'published'>('draft');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [recentlyUsed, setRecentlyUsed] = useState<PropertyReference[]>([]);
-  const [activePane, setActivePane] = useState<ToolbarPane>(null);
-  const [previewTimePeriod, setPreviewTimePeriod] = useState<PreviewTimePeriod>('last30days');
-  const [focusSectionId, setFocusSectionId] = useState<string | null>(null);
+  const [activePane, setActivePane] = useState<PaneType>('library');
+  const [aiInitialQuery, setAiInitialQuery] = useState<string>('');
+  const [showRuleCounts, setShowRuleCounts] = useState(false);
+  const [_focusSectionId, _setFocusSectionId] = useState<string | null>(null);
   const [activatedSections, setActivatedSections] = useState<Set<string>>(new Set(['entry']));
   const [activeSectionId, setActiveSectionId] = useState<string>('entry');
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'define' | 'sync' | 'analyze'>('define');
+  const [activeTab, setActiveTab] = useState<'audience' | 'goals' | 'sync' | 'analyze'>('audience');
 
   // Sync & activation state
   const [syncDestinations, setSyncDestinations] = useState<AddedDestination[]>([]);
   const [experimentMode, setExperimentMode] = useState(false);
   const [isDestinationModalOpen, setIsDestinationModalOpen] = useState(false);
+
+  // Goals conversion tracking state
+  const [goalsConversionEnabled, setGoalsConversionEnabled] = useState(false);
+  const [goalsConversionSource, setGoalsConversionSource] = useState<'static' | 'property'>('property');
+  const [goalsConversionStaticValue, setGoalsConversionStaticValue] = useState('');
+  const [goalsConversionPropertyId, setGoalsConversionPropertyId] = useState('');
+  const [goalsConversionCurrency, setGoalsConversionCurrency] = useState('USD');
 
   // Historical data state
   const [hasHistoricalData, setHasHistoricalData] = useState(false);
@@ -68,6 +66,12 @@ function AudienceBuilderPage() {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [isHistoricalDataModalOpen, setIsHistoricalDataModalOpen] = useState(false);
+
+  // Edit mode state (for published audiences)
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Derive read-only state: published audiences that are not in edit mode
+  const isReadOnly = audienceStatus === 'published' && !isEditMode;
 
   // Preview calculation state
   const [isCalculating, setIsCalculating] = useState(false);
@@ -328,46 +332,28 @@ function AudienceBuilderPage() {
     ));
   };
 
-  const handleAddPropertyToSection = (sectionId: string, match: PropertyMatch) => {
-    // Find the parent item to get all properties
-    const parentItem = match.type === 'fact'
-      ? schema?.facts.find(f => f.id === match.parentId)
-      : schema?.engagements.find(e => e.id === match.parentId);
-
-    if (!parentItem) return;
-
-    // Create a new rule with the selected property
-    const newRule: AddedRule = {
-      id: `rule-${Date.now()}`,
-      propertyId: match.property.id,
-      propertyName: match.property.name,
-      parentName: match.parentName,
-      properties: parentItem.properties,
-    };
-
-    // Add to the specified section
+  const handleRuleTimePeriodChange = (sectionId: string, ruleId: string, timePeriod: TimePeriod) => {
     setSections(prev => prev.map(section =>
       section.id === sectionId
-        ? { ...section, items: [...section.items, newRule] }
+        ? {
+            ...section,
+            items: section.items.map(item => {
+              // Handle rules inside groups
+              if (isRuleGroup(item)) {
+                return {
+                  ...item,
+                  rules: item.rules.map(rule =>
+                    rule.id === ruleId ? { ...rule, timePeriod } : rule
+                  )
+                };
+              }
+              // Handle standalone rules
+              return item.id === ruleId ? { ...item, timePeriod } : item;
+            })
+          }
         : section
     ));
-
     setHasUnsavedChanges(true);
-
-    // Add to recently used
-    const propertyRef: PropertyReference = {
-      type: match.type,
-      parentId: match.parentId,
-      parentName: match.parentName,
-      property: match.property,
-    };
-
-    setRecentlyUsed(prev => {
-      const filtered = prev.filter(p =>
-        !(p.parentId === propertyRef.parentId && p.property.id === propertyRef.property.id)
-      );
-      return [propertyRef, ...filtered].slice(0, 5);
-    });
   };
 
   const handleAddAISuggestionsToSection = (sectionId: string, suggestions: AISuggestion[]) => {
@@ -378,6 +364,8 @@ function AudienceBuilderPage() {
       propertyName: suggestion.propertyName,
       parentName: suggestion.parentName,
       properties: suggestion.properties,
+      operator: suggestion.operator,
+      value: suggestion.value,
     }));
 
     // Add all rules to the specified section
@@ -396,12 +384,6 @@ function AudienceBuilderPage() {
 
     // Set as active section
     setActiveSectionId(sectionId);
-
-    // Focus the search input so user can immediately start typing
-    setFocusSectionId(sectionId);
-
-    // Clear the focus flag after a short delay to allow re-focusing if needed
-    setTimeout(() => setFocusSectionId(null), 100);
   };
 
   const handleSetActiveSection = (sectionId: string) => {
@@ -435,8 +417,11 @@ function AudienceBuilderPage() {
     const selectedIds = sectionSelectedRules[sectionId];
     if (!selectedIds || selectedIds.size < 2) return;
 
+    // Handle virtual section IDs for split entry view
+    const actualSectionId = sectionId.startsWith('entry-') ? 'entry' : sectionId;
+
     setSections(prev => prev.map(section => {
-      if (section.id !== sectionId) return section;
+      if (section.id !== actualSectionId) return section;
 
       // Extract selected rules (only AddedRule items, not groups)
       const selectedRules = section.items.filter(
@@ -489,6 +474,24 @@ function AudienceBuilderPage() {
         } else {
           newItems.push(item);
         }
+      });
+
+      return { ...section, items: newItems };
+    }));
+
+    setHasUnsavedChanges(true);
+  };
+
+  const handleDeleteGroup = (sectionId: string, groupId: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+
+      // Remove the group entirely (including all its rules)
+      const newItems = section.items.filter(item => {
+        if (isRuleGroup(item) && item.id === groupId) {
+          return false;
+        }
+        return true;
       });
 
       return { ...section, items: newItems };
@@ -589,13 +592,63 @@ function AudienceBuilderPage() {
     setHasUnsavedChanges(false);
   };
 
-  const handleTabChange = (newTab: 'define' | 'sync' | 'analyze') => {
-    if (hasUnsavedChanges && activeTab === 'define' && newTab !== 'define') {
+  // Enter edit mode for published audiences
+  const handleEnterEditMode = () => {
+    // If on Analyze tab, switch to Audience tab first
+    if (activeTab === 'analyze') {
+      setActiveTab('audience');
+    }
+    // Always set the correct section ID based on current tab
+    if (activeTab === 'goals') {
+      setActiveSectionId('goals');
+    } else {
+      setActiveSectionId('entry');
+    }
+    setIsEditMode(true);
+  };
+
+  // Discard changes and return to read-only mode
+  const handleDiscardChanges = () => {
+    // Reload original audience data
+    if (id && id !== 'new') {
+      const saved = getAudience(id);
+      if (saved) {
+        setAudienceName(saved.name);
+        setSections(saved.sections as SectionConfig[]);
+        if (saved.syncDestinations) {
+          setSyncDestinations(saved.syncDestinations);
+        }
+        if (saved.experimentMode !== undefined) {
+          setExperimentMode(saved.experimentMode);
+        }
+      }
+    }
+    setIsEditMode(false);
+    setHasUnsavedChanges(false);
+  };
+
+  const handleTabChange = (newTab: 'audience' | 'goals' | 'sync' | 'analyze') => {
+    // Prompt to save when leaving audience or goals tabs with unsaved changes
+    const isLeavingEditableTab = (activeTab === 'audience' || activeTab === 'goals') &&
+                                  (newTab !== 'audience' && newTab !== 'goals');
+    if (hasUnsavedChanges && isLeavingEditableTab) {
       const confirmed = window.confirm('You have unsaved changes. Do you want to save before leaving?');
       if (confirmed) {
         handleSave();
       }
     }
+
+    // Activate appropriate section and set as active when switching tabs
+    if (newTab === 'goals') {
+      setActivatedSections(prev => new Set([...prev, 'goals']));
+      setActiveSectionId('goals');
+    } else if (newTab === 'audience') {
+      setActiveSectionId('entry');
+    } else if (newTab === 'sync') {
+      setActivatedSections(prev => new Set([...prev, 'sync']));
+      setActiveSectionId('sync');
+    }
+
     setActiveTab(newTab);
   };
 
@@ -613,7 +666,7 @@ function AudienceBuilderPage() {
     setLoadingProgress(0);
 
     // Simulate loading with progress updates
-    const duration = 10000 + Math.random() * 5000; // 10-15 seconds
+    const duration = 5000; // 5 seconds
     const interval = 100; // Update every 100ms
     const steps = duration / interval;
     let currentStep = 0;
@@ -868,18 +921,6 @@ function AudienceBuilderPage() {
     return () => clearTimeout(timeoutId);
   }, [sections, customers, schema]);
 
-  const reachedGoals = 0; // TODO: Calculate based on goals section
-
-  // Separate entry section items into facts and engagements
-  const entrySection = sections.find(s => s.id === 'entry');
-  const entryFacts = entrySection?.items.filter(item =>
-    !isRuleGroup(item) && schema && isFactItem(item, schema)
-  ) || [];
-  const entryEngagements = entrySection?.items.filter(item =>
-    !isRuleGroup(item) && schema && !isFactItem(item, schema)
-  ) || [];
-  const shouldSplitEntry = entryFacts.length > 0 && entryEngagements.length > 0;
-
   // Check if we have any COMPLETE rules (property + operator + value)
   const hasCompleteRule = sections.some(section =>
     section.items.some(item => {
@@ -895,6 +936,19 @@ function AudienceBuilderPage() {
     })
   );
 
+  // Generate mock rule counts (random numbers for prototype)
+  const ruleCounts: Record<string, number> = {};
+  sections.forEach(section => {
+    section.items.forEach(item => {
+      if (!isRuleGroup(item)) {
+        // Generate a random count based on a seeded pattern from rule id
+        const seed = item.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        // Generate count that's larger than total (since individual rules match more than combined)
+        ruleCounts[item.id] = Math.floor(matchingProfiles * (0.8 + (seed % 5) * 0.2) + (seed % 50));
+      }
+    });
+  });
+
   return (
     <Box bg="#fbfbfb" height="100vh" overflow="hidden">
         {/* Fixed Header */}
@@ -904,6 +958,8 @@ function AudienceBuilderPage() {
           hasUnsavedChanges={hasUnsavedChanges}
           activeTab={activeTab}
           hasCompleteRule={hasCompleteRule}
+          isReadOnly={isReadOnly}
+          isEditMode={isEditMode}
           onNameChange={setAudienceName}
           onSave={handleSave}
           onPublish={handlePublish}
@@ -913,137 +969,178 @@ function AudienceBuilderPage() {
           isLoadingData={isLoadingData}
           onLoadHistoricalData={handleOpenHistoricalDataModal}
           onUnpublish={handleUnpublish}
+          onEnterEditMode={handleEnterEditMode}
+          onDiscardChanges={handleDiscardChanges}
         />
 
         {/* Main Layout: Conditional based on active tab */}
         <Flex
           pt="60px"
+          pb={2}
           height="100vh"
         >
           {activeTab !== 'analyze' ? (
             <>
-              {/* DEFINE / SYNC TABS LAYOUT */}
+              {/* AUDIENCE / GOALS / SYNC TABS LAYOUT */}
 
-              {/* Toolbar - Hidden for now, keep code for potential future use */}
-              {/* <Toolbar
-                activePane={activePane}
-                onPaneChange={setActivePane}
-              /> */}
-
-              {/* Library Pane - conditionally rendered (hidden on Sync tab) */}
-              {activePane === 'library' && activeTab !== 'sync' && (
-                <Box pt={2} px={6} pb={6} display="flex" alignItems="flex-start">
-                  <LibraryPane
-                    facts={schema.facts}
-                    engagements={schema.engagements}
-                    recentlyUsed={recentlyUsed}
-                    isVisible={true}
-                    activeSectionName={sections.find(s => s.id === activeSectionId)?.title || 'section'}
-                    onItemClick={() => {}} // Deprecated
-                    onPropertyClick={handlePropertyClick}
-                    onClose={() => setActivePane(null)}
-                  />
-                </Box>
+              {/* Activity Bar - only on Audience and Goals tabs, hidden in read-only */}
+              {!isReadOnly && (activeTab === 'audience' || activeTab === 'goals') && (
+                <ActivityBar
+                  activePane={activePane}
+                  onPaneChange={setActivePane}
+                />
               )}
 
-              {/* Main Content Area - Canvas */}
-              <Flex flex="1" pt={2} px={6} pb={6} overflowY="auto">
-                {/* Library Toggle Button - only show when library is closed */}
-                {activePane !== 'library' && (
-                  <Box width="56px" flexShrink={0} mr={2}>
-                    <Button
-                      size="md"
-                      variant="outline"
-                      colorScheme="gray"
-                      onClick={() => setActivePane('library')}
-                      width="40px"
-                      height="40px"
-                      minWidth="40px"
-                      padding={0}
-                      borderRadius="md"
-                    >
-                      <AddIcon fontSize="medium" />
-                    </Button>
+              {/* Library Pane - when library is active, hidden in read-only */}
+              {!isReadOnly && activePane === 'library' && (activeTab === 'audience' || activeTab === 'goals') && (
+                <LibraryPane
+                  key={`library-${isEditMode}-${activeTab}`}
+                  facts={schema.facts}
+                  engagements={schema.engagements}
+                  recentlyUsed={recentlyUsed}
+                  isVisible={true}
+                  activeSectionId={activeSectionId}
+                  activeSectionName={sections.find(s => s.id === activeSectionId)?.title || 'section'}
+                  isEngagementsOnly={activeSectionId === 'goals' || activeSectionId === 'exit'}
+                  onItemClick={() => {}} // Deprecated
+                  onPropertyClick={handlePropertyClick}
+                  onSwitchToAI={(query: string) => {
+                    setAiInitialQuery(query);
+                    setActivePane('ai');
+                  }}
+                />
+              )}
+
+              {/* AI Pane - when AI is active, hidden in read-only */}
+              {!isReadOnly && activePane === 'ai' && (activeTab === 'audience' || activeTab === 'goals') && (
+                <AIPane
+                  facts={schema.facts}
+                  engagements={schema.engagements}
+                  activeSectionId={activeSectionId}
+                  activeSectionName={sections.find(s => s.id === activeSectionId)?.title || 'section'}
+                  initialQuery={aiInitialQuery}
+                  onAddSuggestions={handleAddAISuggestionsToSection}
+                />
+              )}
+
+              {/* Main Content Area - Canvas + SimulationBar */}
+              <Flex flex="1" direction="column" overflow="hidden">
+                {/* Scrollable Canvas area */}
+                <Box flex="1" px={6} overflowY="auto">
+                  <Box display="flex" justifyContent="center" pb={4}>
+                    <Box maxWidth="1100px" width="100%">
+                      <Canvas
+                        sections={sections}
+                        facts={schema.facts}
+                        engagements={schema.engagements}
+                        activatedSections={activatedSections}
+                        activeSectionId={activeSectionId}
+                        activeTab={activeTab}
+                        syncDestinations={syncDestinations}
+                        experimentMode={experimentMode}
+                        isDestinationModalOpen={isDestinationModalOpen}
+                        sectionSelectionMode={sectionSelectionMode}
+                        sectionSelectedRules={sectionSelectedRules}
+                        showRuleCounts={showRuleCounts}
+                        ruleCounts={ruleCounts}
+                        isReadOnly={isReadOnly}
+                        onSectionMatchTypeChange={handleSectionMatchTypeChange}
+                        onSectionTimePeriodChange={handleSectionTimePeriodChange}
+                        onSectionToggleCollapse={handleSectionToggleCollapse}
+                        onRuleDelete={handleRuleDelete}
+                        onRuleAdd={handleRuleAdd}
+                        onRuleChange={handleRuleChange}
+                        onRuleToggleExcluded={handleRuleToggleExcluded}
+                        onRuleToggleDisabled={handleRuleToggleDisabled}
+                        onRuleCommentChange={handleRuleCommentChange}
+                        onRuleTrackVariableChange={handleRuleTrackVariableChange}
+                        onRuleTimePeriodChange={handleRuleTimePeriodChange}
+                        onAddSection={handleAddSection}
+                        onSetActiveSection={handleSetActiveSection}
+                        onEnterSelectionMode={handleEnterSelectionMode}
+                        onExitSelectionMode={handleExitSelectionMode}
+                        onToggleRuleSelection={handleToggleRuleSelection}
+                        onGroupSelected={handleGroupSelected}
+                        onUngroupGroup={handleUngroupGroup}
+                        onDeleteGroup={handleDeleteGroup}
+                        onGroupMatchTypeChange={handleGroupMatchTypeChange}
+                        onRenameGroup={handleRenameGroup}
+                        onOpenDestinationModal={() => setIsDestinationModalOpen(true)}
+                        onCloseDestinationModal={() => setIsDestinationModalOpen(false)}
+                        onSelectDestination={handleSelectDestination}
+                        onDestinationDelete={handleDestinationDelete}
+                        onDestinationTogglePaused={handleDestinationTogglePaused}
+                        onDestinationCommentChange={handleDestinationCommentChange}
+                        onDestinationPercentageChange={handleDestinationPercentageChange}
+                        onDestinationTargetAudienceChange={handleDestinationTargetAudienceChange}
+                        onExperimentToggle={handleExperimentToggle}
+                        onSplitEqually={handleSplitEqually}
+                      />
+
+                      {/* Goals Conversion Panel - only on Goals tab */}
+                      {activeTab === 'goals' && (
+                        <Box mt={4}>
+                          <GoalsConversionPanel
+                            isEnabled={goalsConversionEnabled}
+                            valueSource={goalsConversionSource}
+                            staticValue={goalsConversionStaticValue}
+                            propertyId={goalsConversionPropertyId}
+                            currency={goalsConversionCurrency}
+                            engagements={schema.engagements}
+                            onToggle={() => {
+                              if (!goalsConversionEnabled) {
+                                // Enabling - try to auto-select a numeric property from goals
+                                const goalsSection = sections.find(s => s.id === 'goals');
+                                if (goalsSection) {
+                                  // Collect numeric properties from all rules in goals section
+                                  const numericPropsInGoals: string[] = [];
+                                  goalsSection.items.forEach(item => {
+                                    if (!isRuleGroup(item)) {
+                                      // Find the property definition
+                                      const prop = item.properties.find(p => p.id === item.propertyId);
+                                      if (prop && prop.dataType === 'number') {
+                                        numericPropsInGoals.push(prop.id);
+                                      }
+                                    }
+                                  });
+
+                                  // If exactly one numeric property, auto-select it
+                                  if (numericPropsInGoals.length === 1) {
+                                    setGoalsConversionPropertyId(numericPropsInGoals[0]);
+                                  }
+                                }
+                              }
+                              setGoalsConversionEnabled(!goalsConversionEnabled);
+                            }}
+                            onValueSourceChange={setGoalsConversionSource}
+                            onStaticValueChange={setGoalsConversionStaticValue}
+                            onPropertyChange={setGoalsConversionPropertyId}
+                            onCurrencyChange={setGoalsConversionCurrency}
+                            isReadOnly={isReadOnly}
+                          />
+                        </Box>
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+
+                {/* Simulation Bar - fixed at bottom of column (hidden in read-only mode) */}
+                {activeTab === 'audience' && hasCompleteRule && !isReadOnly && (
+                  <Box bg="gray.50" px={6} py={3}>
+                    <Box display="flex" justifyContent="center">
+                      <Box maxWidth="1100px" width="100%">
+                        <SimulationBar
+                          matchingProfiles={matchingProfiles}
+                          showRuleCounts={showRuleCounts}
+                          onToggleRuleCounts={() => setShowRuleCounts(!showRuleCounts)}
+                          isCalculating={isCalculating}
+                        />
+                      </Box>
+                    </Box>
                   </Box>
                 )}
 
-                {/* Canvas container */}
-                <Box flex="1" display="flex" justifyContent="center">
-                  <Canvas
-                    sections={sections}
-                    facts={schema.facts}
-                    engagements={schema.engagements}
-                    focusSectionId={focusSectionId}
-                    activatedSections={activatedSections}
-                    activeSectionId={activeSectionId}
-                    activeTab={activeTab}
-                    shouldSplitEntry={shouldSplitEntry}
-                    entryFacts={entryFacts as AddedRule[]}
-                    entryEngagements={entryEngagements as AddedRule[]}
-                    syncDestinations={syncDestinations}
-                    experimentMode={experimentMode}
-                    isDestinationModalOpen={isDestinationModalOpen}
-                    sectionSelectionMode={sectionSelectionMode}
-                    sectionSelectedRules={sectionSelectedRules}
-                    onSectionMatchTypeChange={handleSectionMatchTypeChange}
-                    onSectionTimePeriodChange={handleSectionTimePeriodChange}
-                    onSectionToggleCollapse={handleSectionToggleCollapse}
-                    onRuleDelete={handleRuleDelete}
-                    onRuleAdd={handleRuleAdd}
-                    onRuleChange={handleRuleChange}
-                    onRuleToggleExcluded={handleRuleToggleExcluded}
-                    onRuleToggleDisabled={handleRuleToggleDisabled}
-                    onRuleCommentChange={handleRuleCommentChange}
-                    onRuleTrackVariableChange={handleRuleTrackVariableChange}
-                    onAddSection={handleAddSection}
-                    onSetActiveSection={handleSetActiveSection}
-                    onAddProperty={handleAddPropertyToSection}
-                    onAddAISuggestions={handleAddAISuggestionsToSection}
-                    onEnterSelectionMode={handleEnterSelectionMode}
-                    onExitSelectionMode={handleExitSelectionMode}
-                    onToggleRuleSelection={handleToggleRuleSelection}
-                    onGroupSelected={handleGroupSelected}
-                    onUngroupGroup={handleUngroupGroup}
-                    onGroupMatchTypeChange={handleGroupMatchTypeChange}
-                    onRenameGroup={handleRenameGroup}
-                    onOpenDestinationModal={() => setIsDestinationModalOpen(true)}
-                    onCloseDestinationModal={() => setIsDestinationModalOpen(false)}
-                    onSelectDestination={handleSelectDestination}
-                    onDestinationDelete={handleDestinationDelete}
-                    onDestinationTogglePaused={handleDestinationTogglePaused}
-                    onDestinationCommentChange={handleDestinationCommentChange}
-                    onDestinationPercentageChange={handleDestinationPercentageChange}
-                    onDestinationTargetAudienceChange={handleDestinationTargetAudienceChange}
-                    onExperimentToggle={handleExperimentToggle}
-                    onSplitEqually={handleSplitEqually}
-                  />
-                </Box>
               </Flex>
-
-              {/* Right Pane - Different for Define vs Sync */}
-              {activeTab === 'define' && hasCompleteRule && (
-                <Box pt={2} px={6} pb={6} display="flex" alignItems="flex-start">
-                  <PreviewPane
-                    matchingProfiles={matchingProfiles}
-                    reachedGoals={reachedGoals}
-                    timePeriod={previewTimePeriod}
-                    onTimePeriodChange={setPreviewTimePeriod}
-                    hasGoals={(sections.find(s => s.id === 'goals')?.items.length ?? 0) > 0}
-                    hasExitConditions={(sections.find(s => s.id === 'exit')?.items.length ?? 0) > 0}
-                    isCalculating={isCalculating}
-                  />
-                </Box>
-              )}
-              {activeTab === 'sync' && (
-                <Box pt={2} px={6} pb={6} display="flex" alignItems="flex-start">
-                  <DestinationSimulation
-                    matchingProfiles={matchingProfiles}
-                    destinations={syncDestinations}
-                    experimentMode={experimentMode}
-                    isCalculating={isCalculating}
-                  />
-                </Box>
-              )}
             </>
           ) : (
             <>
@@ -1067,17 +1164,6 @@ function AudienceBuilderPage() {
                 />
               </Box>
 
-              {/* Right: Audience Summary Panel */}
-              <Box pt={2} px={6} pb={6} display="flex" flexDirection="column" alignItems="flex-start">
-                <Text fontSize="lg" fontWeight="semibold" color="gray.700" mb={6}>
-                  Definition
-                </Text>
-                <AudienceSummary
-                  sections={sections}
-                  syncDestinations={syncDestinations}
-                  experimentMode={experimentMode}
-                />
-              </Box>
             </>
           )}
         </Flex>
