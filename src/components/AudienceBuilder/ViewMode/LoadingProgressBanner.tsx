@@ -11,23 +11,23 @@ export const LoadingProgressBanner = ({
 }: LoadingProgressBannerProps) => {
   return (
     <Box
-      bg="orange.50"
+      bg="gray.50"
       border="1px solid"
-      borderColor="orange.200"
+      borderColor="gray.200"
       borderRadius="lg"
       p={4}
       mb={6}
     >
       <Flex align="center" justify="space-between" gap={4}>
         <Flex align="center" gap={3} flex="1">
-          <Spinner size="sm" color="orange.600" />
-          <Text fontSize="sm" color="orange.900" fontWeight="medium">
+          <Spinner size="sm" color="gray.600" />
+          <Text fontSize="sm" color="gray.700" fontWeight="medium">
             Loading historical data... {Math.round(progress)}%
           </Text>
         </Flex>
         <Button
           variant="outline"
-          colorScheme="orange"
+          colorScheme="gray"
           size="sm"
           onClick={onCancel}
           flexShrink={0}

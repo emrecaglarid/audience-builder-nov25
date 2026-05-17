@@ -136,7 +136,7 @@ export const HistoricalDataModal = ({
                       h="18px"
                       borderRadius="full"
                       border="2px solid"
-                      borderColor={selectedPreset === preset ? 'blue.500' : 'gray.300'}
+                      borderColor={selectedPreset === preset ? 'purple.600' : 'gray.300'}
                       display="flex"
                       alignItems="center"
                       justifyContent="center"
@@ -147,7 +147,7 @@ export const HistoricalDataModal = ({
                           w="10px"
                           h="10px"
                           borderRadius="full"
-                          bg="blue.500"
+                          bg="purple.600"
                         />
                       )}
                     </Box>
@@ -205,7 +205,7 @@ export const HistoricalDataModal = ({
               Cancel
             </Button>
             <Button
-              colorScheme="blue"
+              colorScheme="purple"
               onClick={handleLoadClick}
               disabled={!isFormValid()}
             >

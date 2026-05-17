@@ -28,14 +28,14 @@ interface MetricConfig {
 export const AudienceChart = ({ data, goalNames = {} }: AudienceChartProps) => {
   // Initialize metric configurations
   const initialMetrics: MetricConfig[] = [
-    { key: 'entered', label: 'Entered', color: '#48BB78', enabled: true },
+    { key: 'entered', label: 'Entered', color: '#A0AEC0', enabled: true },
     { key: 'active', label: 'Active', color: '#805AD5', enabled: true },
-    { key: 'exited', label: 'Exited', color: '#F56565', enabled: true },
+    { key: 'exited', label: 'Exited', color: '#4A5568', enabled: true },
   ];
 
   // Add goal metrics
   Object.keys(goalNames).forEach((goalId, index) => {
-    const colors = ['#3182CE', '#DD6B20', '#38B2AC', '#D69E2E']; // Different colors for goals
+    const colors = ['#6B46C1', '#718096', '#4A5568', '#CBD5E0'];
     initialMetrics.push({
       key: `goals.${goalId}.completions`,
       label: goalNames[goalId],

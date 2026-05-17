@@ -8,7 +8,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Redirect root to audiences */}
-        <Route path="/" element={<Navigate to="/audiences" replace />} />
+        <Route path="/" element={<Navigate to="/audiences/new" replace />} />
 
         {/* Audiences list page (with layout) */}
         <Route
@@ -25,7 +25,7 @@ function App() {
         <Route path="/audiences/:id" element={<AudienceBuilderPage />} />
 
         {/* Catch-all: redirect any unmatched route to audiences */}
-        <Route path="*" element={<Navigate to="/audiences" replace />} />
+        <Route path="*" element={<Navigate to="/audiences/new" replace />} />
       </Routes>
     </BrowserRouter>
   )

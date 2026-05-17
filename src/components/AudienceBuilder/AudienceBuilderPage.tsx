@@ -75,6 +75,7 @@ function AudienceBuilderPage() {
 
   // Preview calculation state
   const [isCalculating, setIsCalculating] = useState(false);
+  const [matchingProfiles, setMatchingProfiles] = useState(0);
 
   // Load audience from localStorage if ID provided
   useEffect(() => {
@@ -172,6 +173,31 @@ function AudienceBuilderPage() {
     });
   }, [sections]); // Run whenever sections change
 
+  // Calculate matching profiles using query engine with debounce
+  useEffect(() => {
+    if (!schema) {
+      setMatchingProfiles(0);
+      return;
+    }
+
+    setIsCalculating(true);
+
+    const timeoutId = setTimeout(() => {
+      try {
+        const conditions = sectionsToConditionGroup(sections, schema);
+        const count = calculateAudienceSize(customers, conditions);
+        setMatchingProfiles(count);
+      } catch (error) {
+        console.error('Error calculating audience size:', error);
+        setMatchingProfiles(0);
+      } finally {
+        setIsCalculating(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [sections, customers, schema]);
+
   // Selection state for grouping
   const [sectionSelectionMode, setSectionSelectionMode] = useState<Record<string, boolean>>({});
   const [sectionSelectedRules, setSectionSelectedRules] = useState<Record<string, Set<string>>>({});
@@ -185,13 +211,15 @@ function AudienceBuilderPage() {
 
     if (!item) return;
 
-    // Create rule with pre-selected property
+    // Create rule with pre-selected property (and optional preset operator/value from value-search)
     const newRule: AddedRule = {
       id: `${propertyRef.type}_${item.id}_${propertyRef.property.id}_${Date.now()}`,
       propertyId: propertyRef.property.id,
       propertyName: propertyRef.property.name,
       parentName: propertyRef.parentName,
       properties: item.properties,
+      operator: propertyRef.presetOperator,
+      value: propertyRef.presetValue,
     };
 
     // Add to active section
@@ -877,39 +905,6 @@ function AudienceBuilderPage() {
       </Box>
     );
   }
-
-  // Calculate matching profiles using query engine with debounce
-  const [matchingProfiles, setMatchingProfiles] = useState(0);
-
-  useEffect(() => {
-    if (!schema) {
-      setMatchingProfiles(0);
-      return;
-    }
-
-    // Set calculating state immediately
-    setIsCalculating(true);
-
-    // Debounce calculation by 500ms
-    const timeoutId = setTimeout(() => {
-      try {
-        // Convert sections to query conditions
-        const conditions = sectionsToConditionGroup(sections, schema);
-
-        // Calculate using query engine
-        const count = calculateAudienceSize(customers, conditions);
-        setMatchingProfiles(count);
-      } catch (error) {
-        console.error('Error calculating audience size:', error);
-        setMatchingProfiles(0); // Fallback to 0 on error
-      } finally {
-        setIsCalculating(false);
-      }
-    }, 500);
-
-    // Cleanup: cancel pending calculation if dependencies change again
-    return () => clearTimeout(timeoutId);
-  }, [sections, customers, schema]);
 
   // Check if we have any COMPLETE rules (property + operator + value)
   const hasCompleteRule = sections.some(section =>

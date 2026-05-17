@@ -26,7 +26,7 @@ export const SyncActivationSection = ({
       case 'syncing':
         return <Badge colorScheme="purple" fontSize="xs">Syncing</Badge>;
       case 'paused':
-        return <Badge colorScheme="yellow" fontSize="xs">Paused</Badge>;
+        return <Badge colorScheme="gray" fontSize="xs">Paused</Badge>;
       case 'error':
         return <Badge colorScheme="red" fontSize="xs">Error</Badge>;
       default:

@@ -20,12 +20,12 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   suggestions?: AISuggestion[];
+  followUps?: string[];
   timestamp: Date;
 }
 
-// Format operator for display
 function formatOperator(operator: string): string {
-  const operatorLabels: Record<string, string> = {
+  const labels: Record<string, string> = {
     equals: 'equals',
     notEquals: 'does not equal',
     greaterThan: '>',
@@ -46,10 +46,9 @@ function formatOperator(operator: string): string {
     lastYear: 'in last year',
     allTime: 'all time',
   };
-  return operatorLabels[operator] || operator;
+  return labels[operator] || operator;
 }
 
-// Format value for display
 function formatValue(value: string | number | boolean, operator: string): string {
   if (operator === 'isTrue' || operator === 'isFalse') return '';
   if (operator.startsWith('last') || operator === 'allTime') return '';
@@ -58,46 +57,67 @@ function formatValue(value: string | number | boolean, operator: string): string
   return String(value);
 }
 
-// Typing indicator component with CSS keyframes
+// Determine follow-up suggestions based on the scenario that was just added
+function getFollowUps(explanation: string): string[] {
+  const lower = explanation.toLowerCase();
+  if (lower.includes('high-value') || lower.includes('vip') || lower.includes('loyal')) {
+    return ['Narrow by recency', 'Add location filter', 'Filter by email engagement'];
+  }
+  if (lower.includes('lapsed') || lower.includes('win-back') || lower.includes('dormant')) {
+    return ['Add spending history', 'Narrow by visit frequency', 'Add demographic filter'];
+  }
+  if (lower.includes('cart') || lower.includes('abandonment')) {
+    return ['Add spending threshold', 'Narrow by visit frequency', 'Filter by email engagement'];
+  }
+  if (lower.includes('email') || lower.includes('subscriber')) {
+    return ['Narrow by purchase history', 'Narrow by recency', 'Add demographic filter'];
+  }
+  if (lower.includes('recency') || lower.includes('recent')) {
+    return ['Add spending history', 'Add location filter', 'Filter by email engagement'];
+  }
+  if (lower.includes('spending') || lower.includes('order value')) {
+    return ['Narrow by recency', 'Add location filter', 'Add demographic filter'];
+  }
+  if (lower.includes('location')) {
+    return ['Add spending history', 'Narrow by recency', 'Filter by email engagement'];
+  }
+  if (lower.includes('visit') || lower.includes('session')) {
+    return ['Add spending threshold', 'Narrow by recency', 'Add demographic filter'];
+  }
+  if (lower.includes('purchase history') || lower.includes('purchase')) {
+    return ['Add spending history', 'Narrow by recency', 'Add demographic filter'];
+  }
+  if (lower.includes('demographic') || lower.includes('age')) {
+    return ['Add spending history', 'Add location filter', 'Narrow by recency'];
+  }
+  return ['Add spending threshold', 'Add location filter', 'Narrow by recency'];
+}
+
 function TypingIndicator() {
   return (
     <>
-      <style>
-        {`
-          @keyframes typingPulse {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 1; }
-          }
-        `}
-      </style>
-      <Flex align="center" gap={1} py={2}>
-        <Box
-          w="6px"
-          h="6px"
-          borderRadius="full"
-          bg="gray.400"
-          style={{ animation: 'typingPulse 1s ease-in-out infinite' }}
-        />
-        <Box
-          w="6px"
-          h="6px"
-          borderRadius="full"
-          bg="gray.400"
-          style={{ animation: 'typingPulse 1s ease-in-out 0.2s infinite' }}
-        />
-        <Box
-          w="6px"
-          h="6px"
-          borderRadius="full"
-          bg="gray.400"
-          style={{ animation: 'typingPulse 1s ease-in-out 0.4s infinite' }}
-        />
+      <style>{`
+        @keyframes typingPulse {
+          0%, 100% { opacity: 0.3; transform: scale(0.85); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+      <Flex align="center" gap={1} py={1}>
+        {[0, 0.2, 0.4].map((delay, i) => (
+          <Box
+            key={i}
+            w="7px"
+            h="7px"
+            borderRadius="full"
+            bg="gray.400"
+            style={{ animation: `typingPulse 1.1s ease-in-out ${delay}s infinite` }}
+          />
+        ))}
       </Flex>
     </>
   );
 }
 
-// Suggestion card component
 interface SuggestionCardProps {
   suggestion: AISuggestion;
   isAdded: boolean;
@@ -116,7 +136,7 @@ function SuggestionCard({ suggestion, isAdded, onAdd }: SuggestionCardProps) {
       px={3}
       py={2}
       bg={isAdded ? 'green.50' : 'white'}
-      _hover={!isAdded ? { bg: 'gray.50', borderColor: 'blue.300' } : {}}
+      _hover={!isAdded ? { bg: 'gray.50', borderColor: 'gray.400' } : {}}
       cursor={isAdded ? 'default' : 'pointer'}
       onClick={() => !isAdded && onAdd()}
       transition="all 0.2s"
@@ -126,37 +146,21 @@ function SuggestionCard({ suggestion, isAdded, onAdd }: SuggestionCardProps) {
           <Text fontSize="xs" fontWeight="medium" color="gray.700">
             {suggestion.propertyName}
           </Text>
-          <Text fontSize="xs" color="gray.500">
-            {operatorText}
-          </Text>
+          <Text fontSize="xs" color="gray.500">{operatorText}</Text>
           {valueText && (
-            <Text fontSize="xs" fontWeight="medium" color="blue.600">
-              {valueText}
-            </Text>
+            <Text fontSize="xs" fontWeight="medium" color="blue.600">{valueText}</Text>
           )}
         </Flex>
-
         {isAdded ? (
-          <Badge colorScheme="green" fontSize="xs">
-            Added
-          </Badge>
+          <Badge colorScheme="green" fontSize="xs">Added</Badge>
         ) : (
-          <Flex
-            align="center"
-            gap={1}
-            color="blue.600"
-            fontSize="xs"
-            fontWeight="medium"
-          >
+          <Flex align="center" gap={1} color="gray.700" fontSize="xs" fontWeight="medium">
             <CheckIcon style={{ fontSize: '14px' }} />
             Add
           </Flex>
         )}
       </Flex>
-
-      <Text fontSize="xs" color="gray.400" mt={1}>
-        {suggestion.parentName}
-      </Text>
+      <Text fontSize="xs" color="gray.400" mt={1}>{suggestion.parentName}</Text>
     </Box>
   );
 }
@@ -169,7 +173,6 @@ export function AIPane({
   initialQuery = '',
   onAddSuggestions,
 }: AIPaneProps) {
-  // Welcome message
   const welcomeMessage: ChatMessage = {
     id: 'welcome',
     role: 'assistant',
@@ -183,24 +186,25 @@ export function AIPane({
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [addedMessageIds, setAddedMessageIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const initialQuerySent = useRef(false);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Handle initial query from library switch
+  // Auto-send the initial query that came from the library search
   useEffect(() => {
-    if (initialQuery && initialQuery.trim()) {
+    if (initialQuery && initialQuery.trim() && !initialQuerySent.current) {
+      initialQuerySent.current = true;
       handleSend(initialQuery);
     }
   }, []);
 
   const handleSend = async (query?: string) => {
-    const messageText = query || inputValue;
-    if (!messageText.trim()) return;
+    const messageText = (query || inputValue).trim();
+    if (!messageText || isTyping) return;
 
-    // Add user message
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -210,21 +214,23 @@ export function AIPane({
     setMessages(prev => [...prev, userMsg]);
     setInputValue('');
 
-    // Simulate AI thinking
+    // Thinking animation — longer for multi-condition prompts
     setIsTyping(true);
-    await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
+    const thinkingMs = messageText.split(' ').length > 4 ? 1800 + Math.random() * 800 : 1000 + Math.random() * 600;
+    await new Promise(r => setTimeout(r, thinkingMs));
 
-    // Generate suggestions
     const result = getAISuggestions(messageText, facts, engagements);
     const suggestions = result?.suggestions || [];
+    const followUps = suggestions.length > 0 ? getFollowUps(result!.explanation) : [];
 
     const aiMsg: ChatMessage = {
       id: `ai-${Date.now()}`,
       role: 'assistant',
       content: suggestions.length > 0
-        ? `I built a rule set for "${messageText}". Should we add it, or do you want to refine?`
-        : `I couldn't build rules for "${messageText}". Try describing your audience differently, like "high-value customers" or "recent purchasers".`,
-      suggestions: suggestions,
+        ? `Here's a rule set for "${messageText}". Add the ones that fit, or add all at once.`
+        : `I couldn't build rules for "${messageText}". Try describing your audience differently, like "high-value customers" or "lapsed buyers".`,
+      suggestions,
+      followUps,
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, aiMsg]);
@@ -243,15 +249,19 @@ export function AIPane({
     setAddedIds(prev => new Set([...prev, suggestion.id]));
   };
 
-  const handleAddAllSuggestions = (message: ChatMessage) => {
-    if (message.suggestions && message.suggestions.length > 0) {
-      onAddSuggestions(activeSectionId, message.suggestions);
-      setAddedMessageIds(prev => new Set([...prev, message.id]));
-      // Mark all individual suggestions as added too
-      const newAddedIds = new Set(addedIds);
-      message.suggestions.forEach(s => newAddedIds.add(s.id));
-      setAddedIds(newAddedIds);
-    }
+  const handleAddAll = (message: ChatMessage) => {
+    if (!message.suggestions?.length) return;
+    onAddSuggestions(activeSectionId, message.suggestions);
+    setAddedMessageIds(prev => new Set([...prev, message.id]));
+    setAddedIds(prev => {
+      const next = new Set(prev);
+      message.suggestions!.forEach(s => next.add(s.id));
+      return next;
+    });
+  };
+
+  const handleFollowUp = (prompt: string) => {
+    handleSend(prompt);
   };
 
   return (
@@ -267,31 +277,21 @@ export function AIPane({
       flexShrink={0}
     >
       {/* Header */}
-      <Flex
-        align="center"
-        gap={2}
-        px={4}
-        py={3}
-        borderBottom="1px solid"
-        borderColor="gray.200"
-      >
-        <AutoAwesomeIcon style={{ fontSize: '18px', color: '#3182CE' }} />
-        <Text fontWeight="semibold" fontSize="md">
-          AI Assistant
-        </Text>
+      <Flex align="center" gap={2} px={4} py={3} borderBottom="1px solid" borderColor="gray.200">
+        <AutoAwesomeIcon style={{ fontSize: '18px', color: '#6B46C1' }} />
+        <Text fontWeight="semibold" fontSize="md">AI Assistant</Text>
       </Flex>
 
-      {/* Messages Area */}
+      {/* Messages */}
       <Box flex={1} overflowY="auto" px={4} py={3}>
         <VStack align="stretch" gap={3}>
           {messages.map((message) => (
             <Box key={message.id}>
               {message.role === 'user' ? (
-                // User message - right aligned
                 <Flex justify="flex-end">
                   <Box
                     maxW="85%"
-                    bg="blue.500"
+                    bg="gray.800"
                     color="white"
                     px={3}
                     py={2}
@@ -302,7 +302,6 @@ export function AIPane({
                   </Box>
                 </Flex>
               ) : (
-                // AI message - left aligned
                 <Box maxW="100%">
                   <Box
                     bg="gray.100"
@@ -310,7 +309,7 @@ export function AIPane({
                     py={2}
                     borderRadius="lg"
                     borderBottomLeftRadius="sm"
-                    mb={message.suggestions && message.suggestions.length > 0 ? 2 : 0}
+                    mb={message.suggestions?.length ? 2 : 0}
                   >
                     <Text fontSize="sm" color="gray.700">{message.content}</Text>
                   </Box>
@@ -327,18 +326,49 @@ export function AIPane({
                         />
                       ))}
 
-                      {/* Add all button or confirmation */}
+                      {/* Add all / confirmation */}
                       {addedMessageIds.has(message.id) ? (
-                        <Flex align="center" gap={1} py={2} color="green.600" fontSize="sm" fontWeight="medium">
-                          <CheckIcon style={{ fontSize: '16px' }} />
-                          Added {message.suggestions.length} rules
-                        </Flex>
+                        <>
+                          <Flex align="center" gap={1} py={1} color="green.600" fontSize="sm" fontWeight="medium">
+                            <CheckIcon style={{ fontSize: '16px' }} />
+                            Added {message.suggestions.length} rules
+                          </Flex>
+
+                          {/* Follow-up paths */}
+                          {message.followUps && message.followUps.length > 0 && (
+                            <Box pt={1}>
+                              <Text fontSize="xs" color="gray.500" mb={1.5}>Refine further:</Text>
+                              <Flex gap={1.5} flexWrap="wrap">
+                                {message.followUps.map((fp) => (
+                                  <Box
+                                    key={fp}
+                                    as="button"
+                                    px={2.5}
+                                    py={1}
+                                    fontSize="xs"
+                                    color="gray.700"
+                                    border="1px solid"
+                                    borderColor="gray.300"
+                                    borderRadius="full"
+                                    bg="gray.100"
+                                    cursor="pointer"
+                                    _hover={{ bg: 'gray.200', borderColor: 'gray.400' }}
+                                    onClick={() => handleFollowUp(fp)}
+                                    transition="all 0.15s"
+                                  >
+                                    {fp}
+                                  </Box>
+                                ))}
+                              </Flex>
+                            </Box>
+                          )}
+                        </>
                       ) : (
                         <Button
-                          colorScheme="blue"
+                          colorScheme="purple"
                           size="sm"
                           mt={1}
-                          onClick={() => handleAddAllSuggestions(message)}
+                          onClick={() => handleAddAll(message)}
                         >
                           Add all to audience
                         </Button>
@@ -350,13 +380,13 @@ export function AIPane({
             </Box>
           ))}
 
-          {/* Typing indicator */}
+          {/* Thinking indicator */}
           {isTyping && (
             <Box>
               <Box
                 bg="gray.100"
                 px={3}
-                py={1}
+                py={1.5}
                 borderRadius="lg"
                 borderBottomLeftRadius="sm"
                 display="inline-block"
@@ -366,16 +396,16 @@ export function AIPane({
             </Box>
           )}
 
-          {/* Scroll anchor */}
           <div ref={messagesEndRef} />
         </VStack>
       </Box>
 
-      {/* Input Area */}
+      {/* Input */}
       <Box px={4} py={3} borderTop="1px solid" borderColor="gray.200">
         <Flex gap={2}>
           <Input
-            placeholder="Describe your audience..."
+            ref={inputRef}
+            placeholder="Describe your audience…"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}

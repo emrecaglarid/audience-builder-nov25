@@ -131,10 +131,10 @@ export const CriteriaSection = ({
       bg="white"
       borderRadius="lg"
       border="1px solid"
-      borderColor={isActive ? 'blue.500' : 'gray.200'}
+      borderColor={isActive ? 'gray.900' : 'gray.200'}
       overflow="visible"
       mb={4}
-      boxShadow={isActive ? '0 0 0 3px rgba(66, 153, 225, 0.15)' : 'none'}
+      boxShadow={isActive ? '0 0 0 3px rgba(0, 0, 0, 0.08)' : 'none'}
       transition="all 0.2s"
       cursor="pointer"
       onClick={onSetActive}
@@ -237,11 +237,11 @@ export const CriteriaSection = ({
               justify="space-between"
               px={4}
               py={2}
-              bg="blue.50"
+              bg="gray.50"
               borderBottom="1px solid"
-              borderColor="blue.200"
+              borderColor="gray.200"
             >
-              <Text fontSize="sm" color="blue.700" fontWeight="medium">
+              <Text fontSize="sm" color="gray.800" fontWeight="medium">
                 Select rules to group ({selectedRuleIds.size} selected)
               </Text>
               <Flex gap={2}>
@@ -254,7 +254,7 @@ export const CriteriaSection = ({
                 </Button>
                 <Button
                   size="xs"
-                  colorScheme="blue"
+                  colorScheme="purple"
                   onClick={onGroupSelected}
                   disabled={selectedRuleIds.size < 2}
                 >

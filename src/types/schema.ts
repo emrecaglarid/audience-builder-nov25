@@ -40,4 +40,7 @@ export interface PropertyReference {
   parentId: string // fact or engagement ID
   parentName: string // fact or engagement name
   property: PropertyDefinition
+  // Optional preset rule values (e.g. from value-based search "Gender = male")
+  presetOperator?: string
+  presetValue?: string | number | boolean
 }

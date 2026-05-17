@@ -8,23 +8,23 @@ interface HistoricalDataBannerProps {
 export const HistoricalDataBanner = ({ onLoadClick }: HistoricalDataBannerProps) => {
   return (
     <Box
-      bg="blue.50"
+      bg="gray.50"
       border="1px solid"
-      borderColor="blue.200"
+      borderColor="gray.200"
       borderRadius="lg"
       p={4}
       mb={6}
     >
       <Flex align="center" justify="space-between" gap={4}>
         <Flex align="center" gap={3} flex="1">
-          <InfoIcon style={{ color: '#3182CE', fontSize: '20px' }} />
-          <Text fontSize="sm" color="blue.900">
+          <InfoIcon style={{ color: '#4A5568', fontSize: '20px' }} />
+          <Text fontSize="sm" color="gray.800">
             No data available for audience yet. You can load historical data.
           </Text>
         </Flex>
         <Button
           variant="outline"
-          colorScheme="blue"
+          colorScheme="gray"
           size="sm"
           onClick={onLoadClick}
           flexShrink={0}

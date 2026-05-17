@@ -25,7 +25,7 @@ function getSyncStatusColor(status: SyncStatus | undefined, hasDestinations: boo
   if (!hasDestinations) return 'gray.400'
   switch (status) {
     case 'healthy': return 'green.500'
-    case 'warning': return 'yellow.500'
+    case 'warning': return 'purple.600'
     case 'error': return 'red.500'
     case 'inactive': return 'gray.400'
     default: return 'gray.400'
@@ -135,7 +135,7 @@ function AudienceListPage() {
                           fontSize: '10px',
                           color: getSyncStatusColor(audience.syncStatus, hasDestinations)
                             .replace('green.500', '#38A169')
-                            .replace('yellow.500', '#D69E2E')
+                            .replace('purple.600', '#6B46C1')
                             .replace('red.500', '#E53E3E')
                             .replace('gray.400', '#A0AEC0')
                         }}
